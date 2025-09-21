@@ -4,27 +4,57 @@
 #include <QDBusPendingCallWatcher>
 #include <QVariantMap>
 
+enum class ScreenCastState {
+    Idle,
+    CreatingSession,
+    SessionCreated,
+    SelectingSources,
+    SourcesSelected,
+    Starting,
+    AppSelected,
+    OpeningPipeWireRemote,
+    PipeWireRemoteCreated,
+    Active,
+    Error
+};
+
 class ScreenCastHandler : public QObject
 {
     Q_OBJECT
+
 public:
-    explicit ScreenCastHandler(QObject* parent = nullptr);
+    // Singleton
+    static ScreenCastHandler* instance();
 
-    void createSession();
+    ScreenCastHandler(const ScreenCastHandler&) = delete;
+    ScreenCastHandler& operator=(const ScreenCastHandler&) = delete;
+    //
 
-    signals:
-        void sessionCreated(const QString& sessionHandle);
-    void sourcesSelected(const QString& requestHandle);
+    void setScreenCastState(ScreenCastState NewScreenCastState);
 
-private slots:
+    void init();
+
+public slots:
     void onCreateSessionFinished(QDBusPendingCallWatcher* watcher);
     void onCreateSessionResponse(uint responseCode, const QVariantMap& results);
     void onSelectSourcesFinished(QDBusPendingCallWatcher* watcher);
     void onSelectSourcesResponse(uint code, const QVariantMap &results);
     void onStartFinished(QDBusPendingCallWatcher* watcher);
     void onStartResponse(uint code, const QVariantMap &results);
+    void onOpenPipeWireRemoteFinished(QDBusPendingCallWatcher* watcher);
 
 private:
+    explicit ScreenCastHandler();
+
+    void onChangeScreenCastState(ScreenCastState NewScreenCastState);
+
+    void createSession();
+    void selectSources();
+    void start();
+    void openPipeWireRemote();
+
+    ScreenCastState m_screenCastState = ScreenCastState::Idle;
     QDBusInterface* m_portal;
     QString m_sessionHandle;
+    int m_pwFd = -1;
 };

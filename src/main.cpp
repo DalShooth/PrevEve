@@ -3,6 +3,7 @@
 #include <QtDBus/qdbusmetatype.h>
 #include <QtDBus>
 #include "StreamInfo.h"
+#include "ScreenCastHandler.h"
 
 int main(int argc, char *argv[])
 {
@@ -18,6 +19,8 @@ int main(int argc, char *argv[])
     // (Optionnel mais utile) vérifier l'AppID passé par l'env
     const QByteArray appId = qgetenv("XDG_DESKTOP_PORTAL_APPLICATION_ID");
     qInfo() << "XDG_DESKTOP_PORTAL_APPLICATION_ID =" << (appId.isEmpty() ? "<non défini>" : appId);
+
+    ScreenCastHandler::instance();
 
     // Afficher une fenêtre pour que le portail puisse associer la requête à ton appli
     MainWindow w;
