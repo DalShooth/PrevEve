@@ -1,9 +1,9 @@
 #pragma once
 
 #include "ui_MainWindow.h"
-#include "ScreenCastHandler.h"
+#include "StreamManager.h"
 
-class MainWindow : public QMainWindow
+class MainWindow final : public QMainWindow
 {
     Q_OBJECT
 
@@ -12,5 +12,4 @@ public:
 
 private:
     Ui_MainWindow ui;   // objet direct
-    ScreenCastHandler* m_screencast;
 };

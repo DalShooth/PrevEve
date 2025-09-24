@@ -1,32 +1,21 @@
-#include <QApplication>
 #include "MainWindow.h"
 #include <QtDBus/qdbusmetatype.h>
 #include <QtDBus>
 #include "PortalStreamInfo.h"
-#include "ScreenCastHandler.h"
+#include "StreamManager.h"
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    // Enregistrement DBus
+    //= Enregistrement PortalStreamInfo
     qDBusRegisterMetaType<PortalStreamInfo>();
     qDBusRegisterMetaType<QList<PortalStreamInfo>>();
+    //=
 
-    // IMPORTANT côté KDE/Wayland : expose un DesktopFileName cohérent avec ton AppID/.desktop
-    QGuiApplication::setDesktopFileName(QStringLiteral("PrevEve"));
-
-    // (Optionnel mais utile) vérifier l'AppID passé par l'env
-    const QByteArray appId = qgetenv("XDG_DESKTOP_PORTAL_APPLICATION_ID");
-    qInfo() << "XDG_DESKTOP_PORTAL_APPLICATION_ID =" << (appId.isEmpty() ? "<non défini>" : appId);
-
-    ScreenCastHandler::instance();
-
-    // Afficher une fenêtre pour que le portail puisse associer la requête à ton appli
-    MainWindow w;
-    w.setWindowTitle(QStringLiteral("PrevEve"));
-    w.resize(400, 200);
-    w.show();
+    MainWindow MainWindow; // Crée la fenêtre principale
+    StreamManager::Instance().SetMainWindow(&MainWindow); // Crée StreamManager et Set sa ref à MainWindow (Singleton)
+    MainWindow.show(); // Affiche MainWindow
 
     return app.exec();
 }

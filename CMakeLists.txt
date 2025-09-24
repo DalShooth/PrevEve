@@ -11,6 +11,7 @@ set(CMAKE_FIND_DEBUG_MODE FALSE)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Core DBus)
 find_package(PkgConfig REQUIRED)
+find_package(KF5WindowSystem REQUIRED)
 
 pkg_check_modules(GST REQUIRED gstreamer-1.0>=1.20)
 pkg_check_modules(PIPEWIRE REQUIRED libpipewire-0.3)
@@ -24,13 +25,23 @@ qt_add_executable(
         src/MainWindow.cpp
         src/MainWindow.h
         src/MainWindow.ui
-        src/ScreenCastHandler.cpp
-        src/ScreenCastHandler.h
+        src/PreviewWidget.ui
+        src/StreamManager.cpp
+        src/StreamManager.h
         src/PortalStreamInfo.h
+        src/PipeWirePreview.cpp
+        src/PipeWirePreview.h
 )
 
 target_include_directories(PrevEve PRIVATE ${PIPEWIRE_INCLUDE_DIRS})
 
 target_link_libraries(
-        PrevEve PRIVATE Qt6::Widgets Qt6::Core Qt6::DBus ${GST_LIBRARIES} ${PIPEWIRE_LIBRARIES}
+        PrevEve
+        PRIVATE
+        Qt6::Widgets
+        Qt6::Core
+        Qt6::DBus
+        ${GST_LIBRARIES}
+        ${PIPEWIRE_LIBRARIES}
+        KF5::WindowSystem
 )

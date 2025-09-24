@@ -2,28 +2,27 @@
 
 MainWindow::MainWindow()
 {
-    ui.setupUi(this);   // plus de "new", plus de "->"
+    ui.setupUi(this); // UI deviens Ui_MainWindow
 
+    // Connecte le bouton test
     connect(
         ui.pushButton,
         &QPushButton::clicked,
         this,
-        [] { qInfo() << "Button clicked"; ScreenCastHandler::instance()->init(); });
+        [] { qInfo() << "Button clicked"; StreamManager::Instance().init(); });
 
-    QImage img(200, 200, QImage::Format_RGB32);
-    img.fill(Qt::red);
+
+
+
+
+
+
 
     connect(
-        ScreenCastHandler::instance(),
-        &ScreenCastHandler::videoFrameAvailable,
+        &StreamManager::Instance(),
+        &StreamManager::videoFrameAvailable,
         this,
         [this](const QImage& image) {
             ui.label->setPixmap(QPixmap::fromImage(image));
     });
-
-    // connect(
-    //     ui.pushButton_2,
-    //     &QPushButton::clicked,
-    //     this,
-    //     [] { qInfo() << "Button_2 clicked"; ScreenCastHandler::instance()->test(); });
 }
