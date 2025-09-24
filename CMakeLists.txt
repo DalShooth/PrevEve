@@ -26,7 +26,7 @@ qt_add_executable(
         src/MainWindow.ui
         src/ScreenCastHandler.cpp
         src/ScreenCastHandler.h
-        src/StreamInfo.h
+        src/PortalStreamInfo.h
 )
 
 target_include_directories(PrevEve PRIVATE ${PIPEWIRE_INCLUDE_DIRS})

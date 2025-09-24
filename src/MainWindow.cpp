@@ -20,4 +20,10 @@ MainWindow::MainWindow()
         [this](const QImage& image) {
             ui.label->setPixmap(QPixmap::fromImage(image));
     });
+
+    // connect(
+    //     ui.pushButton_2,
+    //     &QPushButton::clicked,
+    //     this,
+    //     [] { qInfo() << "Button_2 clicked"; ScreenCastHandler::instance()->test(); });
 }

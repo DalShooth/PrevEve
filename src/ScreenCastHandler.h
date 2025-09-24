@@ -6,7 +6,7 @@
 #include <pipewire/stream.h>
 #include <spa/utils/hook.h>
 
-#include "StreamInfo.h"
+#include "PortalStreamInfo.h"
 
 class QSocketNotifier;
 
@@ -24,63 +24,72 @@ enum class ScreenCastState {
     Error
 };
 
-class ScreenCastHandler : public QObject
+class ScreenCastHandler final : public QObject
 {
     Q_OBJECT
 
 public:
-    // Singleton
+    //= Singleton
     static ScreenCastHandler* instance();
-
     ScreenCastHandler(const ScreenCastHandler&) = delete;
     ScreenCastHandler& operator=(const ScreenCastHandler&) = delete;
-    //
+    //=
 
-    void setScreenCastState(ScreenCastState NewScreenCastState);
+    void setScreenCastState(ScreenCastState NewScreenCastState); // StateMachine Setter
 
-    void init();
-
-    static const char* streamStateToStr(pw_stream_state state);
+    void init(); // Todo -> changer cette merde
 
     signals:
         void videoFrameAvailable(const QImage &image);
 
 public slots:
-    void onCreateSessionFinished(QDBusPendingCallWatcher* watcher);
-    void onCreateSessionResponse(uint responseCode, const QVariantMap& results);
-    void onSelectSourcesFinished(QDBusPendingCallWatcher* watcher);
-    void onSelectSourcesResponse(uint code, const QVariantMap &results);
-    void onStartFinished(QDBusPendingCallWatcher* watcher);
-    void onStartResponse(uint code, const QVariantMap &results);
-    void onOpenPipeWireRemoteFinished(QDBusPendingCallWatcher* watcher);
+    void onDBusCreateSessionRequestFinished(QDBusPendingCallWatcher* watcher); // Réponse de création de requete de création de session
+    void onDBusCreateSessionRequestResponse(uint responseCode, const QVariantMap& results); // Résultat de la requête de création de session
+    void onDBusSelectSourcesRequestFinished(QDBusPendingCallWatcher* watcher); // Réponse de création de requête de sélection des sources
+    void onDBusSelectSourcesRequestResponse(uint responseCode, const QVariantMap &results); // Résultat de la requête de selection des sources
+    void onStartScreensSharingRequestFinished(QDBusPendingCallWatcher* watcher); // Réponse de la création de la requête de démarrage de stream
+    void onStartScreensSharingRequestResponse(uint code, const QVariantMap &results); // Résultat de la requête de démarrage de stream (pop-up)
+    void onOpenPipeWireConnexionRequestFinished(QDBusPendingCallWatcher* watcher); // Réponse de la création de requête de création de connexion PipeWire
 
 private:
-    explicit ScreenCastHandler();
-    ~ScreenCastHandler() override;
+    explicit ScreenCastHandler(); // Constructor
+    ~ScreenCastHandler() override; // De-Constructor
 
-    void onChangeScreenCastState(ScreenCastState NewScreenCastState);
+    //= State Machine Linéaire
+    void onChangeScreenCastState();
+    ScreenCastState m_StreamState = ScreenCastState::Idle;
+    //=
 
-    void createSession();
-    void selectSources();
-    void start();
-    void openPipeWireRemote();
-    void openThumbnailsPipe();
+    void DBusCreateSessionRequest(); // Requête de création de session
+    void DBusSelectSourcesRequest(); // Requête de selection des sources (not the pop-up, only sources settings*)
+    void StartScreensSharingRequest(); // Requête de démarrage (open the pop-up)
+    void OpenPipeWireConnexionRequest(); // Requête de création de la connexion PipeWire
 
-    ScreenCastState m_screenCastState = ScreenCastState::Idle;
+    void openThumbnailsPipe(); // Todo
 
-    QDBusInterface* m_portal = nullptr;
-    QString m_sessionHandle;
-    int m_pwFd;
-    QList<StreamInfo> m_streams;
+    QDBusInterface* m_QtDBusInterface; // Interface D-Bus
+    pw_properties *m_PipeWireProperties; // Propriétés PipeWire
 
-    pw_properties *m_StreamProps;
-    pw_loop* m_pwLoop;
-    pw_context* m_pwContext;
-    pw_core* m_pwCore = nullptr;
-    QSocketNotifier* m_socketNotifier;
+    QDBusObjectPath m_DBusSessionHandle; // Session D-Bus
+    int m_PipeWireFileDescriptor; // Canal de communication vers le serveur PipeWire
+    QList<PortalStreamInfo> m_PortalStreamInfoList;
+
+    pw_loop* m_PipeWireLoop; // Boucle d’événements PipeWire
+    QSocketNotifier* m_PipeWireLoopSocketNotifier; // Notifier PipeWireLoop
+    pw_context* m_PipeWireContext; /* Représente PrevEve côté serveur PipeWire,
+    nécessaire pour la connexion au démon PipeWire (pw-core),
+    l’authentification et les permissions, les ressources (streams, nodes, etc.) */
+    pw_core* m_PipeWireCore = nullptr; // Connexion unique au démon PipeWire
+
+    //= Todo
     pw_stream* m_pwStream = nullptr;
     spa_hook m_streamListener;
     uint8_t m_buffer[1024] = {};
     uint32_t m_videoWidth;
     uint32_t m_videoHeight;
+    //
+
+    //= Debug Tools
+    static const char* streamStateToStr(pw_stream_state state); // Convert pw_stream_state to String
+    //
 };

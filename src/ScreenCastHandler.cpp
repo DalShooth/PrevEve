@@ -4,8 +4,7 @@
 #include <QDebug>
 #include <qimage.h>
 #include <QSocketNotifier>
-
-#include "StreamInfo.h"
+#include "PortalStreamInfo.h"
 #include <pipewire/pipewire.h>
 #include <spa/param/video/format-utils.h>
 #include <spa/debug/types.h>
@@ -15,115 +14,116 @@
 
 ScreenCastHandler::ScreenCastHandler()
 {
-    qInfo() << "[ScreenCastHandler]";
+    qInfo() << "CONSTRUCTOR [ScreenCastHandler]";
 
-    m_portal = new QDBusInterface(
+    // Canal de communication persistant entre l'app Qt et le service org.freedesktop.portal.ScreenCast
+    m_QtDBusInterface = new QDBusInterface(
         "org.freedesktop.portal.Desktop",       // service
         "/org/freedesktop/portal/desktop",      // chemin
         "org.freedesktop.portal.ScreenCast",    // interface
         QDBusConnection::sessionBus(),
         this);
 
-    m_StreamProps = pw_properties_new(
+    // Dictionnaire de propriétés PipeWire qui décrit le flux comme vidéo de capture
+    m_PipeWireProperties = pw_properties_new(
         PW_KEY_MEDIA_TYPE, "Video",
         PW_KEY_MEDIA_CATEGORY, "Capture",
         PW_KEY_MEDIA_ROLE, "Application",
         nullptr);
 
-    pw_init(nullptr, nullptr);
+    pw_init(nullptr, nullptr); // Initialise PipeWire
 
-    m_pwLoop = pw_loop_new(nullptr);
-    if (!m_pwLoop) {
-        qInfo() << "Failed to create loop";
+    m_PipeWireLoop = pw_loop_new(nullptr); // Boucle d'événement PipeWire
+    if (!m_PipeWireLoop) {
+        qCritical() << "CONSTRUCTOR [ScreenCastHandler] -> m_PipeWireLoop invalide";
         return;
     }
 
-    m_pwContext = pw_context_new(m_pwLoop, nullptr, 0);
-    if (!m_pwContext) {
-        qInfo() << "Failed to create context";
+    m_PipeWireContext = pw_context_new(m_PipeWireLoop, nullptr, 0); // Point d’entrée PipeWire
+    if (!m_PipeWireContext) {
+        qCritical() << "CONSTRUCTOR [ScreenCastHandler] -> m_PipeWireContext invalide";
         return;
     }
 
-    const int fd = pw_loop_get_fd(m_pwLoop);
-    if (fd == -1) {
-        qInfo() << "Failed to get fd";
-        return;
-    }
-    m_socketNotifier = new QSocketNotifier(fd, QSocketNotifier::Read, this);
+    // Notifier m_PipeWireLoop sur son FD->Read
+    m_PipeWireLoopSocketNotifier = new QSocketNotifier(
+        pw_loop_get_fd(m_PipeWireLoop),
+        QSocketNotifier::Read,
+        this);
 
-    const QMetaObject::Connection socketNotifierActivatedConnexion = connect(m_socketNotifier,
+    // Connecte m_PipeWireLoopSocketNotifier
+    const QMetaObject::Connection socketNotifierActivatedConnexion = connect(m_PipeWireLoopSocketNotifier,
         &QSocketNotifier::activated,
         this,
-        [this] { pw_loop_iterate(m_pwLoop, 0); });
+        [this] { pw_loop_iterate(m_PipeWireLoop, 0); });
     if (!socketNotifierActivatedConnexion) {
-        qInfo() << "Failed to connect socket";
+        qCritical() << "CONSTRUCTOR [ScreenCastHandler] -> Failed to connect m_PipeWireLoopSocketNotifier";
+        return;
     }
 }
 
 ScreenCastHandler::~ScreenCastHandler()
 {
-    if (m_pwCore) {
-        pw_core_disconnect(m_pwCore);
-        m_pwCore = nullptr;
+    // Todo -> refaire le deconstructeur
+    if (m_PipeWireCore) {
+        pw_core_disconnect(m_PipeWireCore);
+        m_PipeWireCore = nullptr;
     }
-    if (m_pwContext) {
-        pw_context_destroy(m_pwContext);
-        m_pwContext = nullptr;
+    if (m_PipeWireContext) {
+        pw_context_destroy(m_PipeWireContext);
+        m_PipeWireContext = nullptr;
     }
-    if (m_pwLoop) {
-        pw_loop_destroy(m_pwLoop);
-        m_pwLoop = nullptr;
+    if (m_PipeWireLoop) {
+        pw_loop_destroy(m_PipeWireLoop);
+        m_PipeWireLoop = nullptr;
     }
     pw_deinit();
 }
 
-ScreenCastHandler * ScreenCastHandler::instance()
+ScreenCastHandler * ScreenCastHandler::instance() // SingleTon
 {
     static ScreenCastHandler s_instance;
     return &s_instance;
 }
 
-void ScreenCastHandler::onChangeScreenCastState(ScreenCastState NewScreenCastState)
+void ScreenCastHandler::onChangeScreenCastState() // Linear State Machine
 {
-    qInfo() << "[onChangeScreenCastState] " << static_cast<int>(NewScreenCastState);
-
-    m_screenCastState = NewScreenCastState;
-
-    switch (m_screenCastState) {
-        case ScreenCastState::Idle:
-            qInfo() << "screenCastState is Idle";
+    switch (m_StreamState) {
+        case ScreenCastState::Idle: // Cosmetique
+            qInfo() << "[onChangeScreenCastState] -> Idle";
             break;
-        case ScreenCastState::CreatingSession:
-            qInfo() << "CreatingSession...";
+        case ScreenCastState::CreatingSession: // Cosmetique
+            qInfo() << "[onChangeScreenCastState] -> CreatingSession...";
             break;
-        case ScreenCastState::SessionCreated:
-            qInfo() << "SessionCreated";
-            selectSources();
+        case ScreenCastState::SessionCreated: // Actif
+            qInfo() << "[onChangeScreenCastState] -> SessionCreated";
+            DBusSelectSourcesRequest();
             break;
-        case ScreenCastState::SelectingSources:
-            qInfo() << "SelectingSources...";
+        case ScreenCastState::SelectingSources: // Cosmetique
+            qInfo() << "[onChangeScreenCastState] -> SelectingSources...";
             break;
-        case ScreenCastState::SourcesSelected:
-            qInfo() << "SourcesSelected";
-            start();
+        case ScreenCastState::SourcesSelected: // Actif
+            qInfo() << "[onChangeScreenCastState] -> SourcesSelected";
+            StartScreensSharingRequest();
             break;
-        case ScreenCastState::Starting:
-            qInfo() << "Starting...";
+        case ScreenCastState::Starting: // Cosmetique
+            qInfo() << "[onChangeScreenCastState] -> Starting...";
             break;
-        case ScreenCastState::AppSelected:
-            qInfo() << "AppSelected";
-            openPipeWireRemote();
+        case ScreenCastState::AppSelected: // Actif
+            qInfo() << "[onChangeScreenCastState] -> AppSelected";
+            OpenPipeWireConnexionRequest();
             break;
-        case ScreenCastState::OpeningPipeWireRemote:
-            qInfo() << "OpeningPipeWireRemote...";
+        case ScreenCastState::OpeningPipeWireRemote: // Cosmetique
+            qInfo() << "[onChangeScreenCastState] -> OpeningPipeWireRemote...";
             break;
-        case ScreenCastState::PipeWireRemoteCreated:
-            qInfo() << "PipeWireRemoteCreated";
+        case ScreenCastState::PipeWireRemoteCreated: // Actif
+            qInfo() << "[onChangeScreenCastState] -> PipeWireRemoteCreated";
             setScreenCastState(ScreenCastState::Active);
             break;
-        case ScreenCastState::Active:
-            qInfo() << "screenCastState is Active";
+        case ScreenCastState::Active: // Actif
+            qInfo() << "[onChangeScreenCastState] -> Streams is Active";
             openThumbnailsPipe();
+            // Changement ici
             break;
         default:
             break;
@@ -131,274 +131,277 @@ void ScreenCastHandler::onChangeScreenCastState(ScreenCastState NewScreenCastSta
 }
 
 void ScreenCastHandler::setScreenCastState(::ScreenCastState NewScreenCastState) {
-    qInfo() << "[setScreenCastState] " << static_cast<int>(m_screenCastState) << " -> " << static_cast<int>(NewScreenCastState);
-
-    if (m_screenCastState == NewScreenCastState) {
-        return;
-    }
-
-    m_screenCastState = NewScreenCastState;
-    onChangeScreenCastState(m_screenCastState);
+    //qInfo() << "[setScreenCastState] " << static_cast<int>(m_StreamState) << " -> " << static_cast<int>(NewScreenCastState);
+    m_StreamState = NewScreenCastState;
+    onChangeScreenCastState();
 }
 
-void ScreenCastHandler::init()
+void ScreenCastHandler::init() // Todo -> changement complet de lancement ici
 {
     qInfo() << "[init]";
 
-    createSession();
+    DBusCreateSessionRequest();
 }
 
-void ScreenCastHandler::createSession()
+void ScreenCastHandler::DBusCreateSessionRequest() // Requête de création de session D-Bus
 {
-    qInfo() << "[createSession]";
+    qInfo() << "[DBusCreateSessionRequest]";
 
-    QVariantMap opts;
-    opts["session_handle_token"] = "mysessiontoken";
-    opts["handle_token"] = "createreq";
+    QVariantMap SessionRequestOptions; // Options de la requête (const don't work)
+    SessionRequestOptions["session_handle_token"] = "PrevEveSessionHandleToken";
+    SessionRequestOptions["handle_token"] = "PrevEveHandleToken";
 
-    QDBusPendingCall call = m_portal->asyncCall("CreateSession", opts);
-
-    auto* watcher = new QDBusPendingCallWatcher(call, this);
+    const QDBusPendingCall call = m_QtDBusInterface->asyncCall("CreateSession", SessionRequestOptions);
+    QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher(call, this);
     connect(
         watcher,
         &QDBusPendingCallWatcher::finished,
         this,
-        &ScreenCastHandler::onCreateSessionFinished);
+        &ScreenCastHandler::onDBusCreateSessionRequestFinished);
 
-    setScreenCastState(ScreenCastState::CreatingSession);
+    setScreenCastState(ScreenCastState::CreatingSession); // Passe à l'état 'en cours de création' (cosmetique)
 }
 
-void ScreenCastHandler::onCreateSessionFinished(QDBusPendingCallWatcher* watcher)
+void ScreenCastHandler::onDBusCreateSessionRequestFinished(QDBusPendingCallWatcher* watcher)
 {
-    qInfo() << "[onCreateSessionFinished]";
+    qInfo() << "[onDBusCreateSessionRequestFinished]";
 
-    QDBusPendingReply<QDBusObjectPath> reply = *watcher;
+    const QDBusPendingReply<QDBusObjectPath> reply = *watcher;
     if (reply.isError()) {
-        qWarning() << "Erreur:" << reply.error().message();
+        qWarning() << "[onDBusCreateSessionRequestFinished] -> Erreur:" << reply.error().message();
+        return;
     }
-    else {
-        const QDBusObjectPath requestHandle = reply.value();
-        qInfo() << "Requête envoyée, handle =" << requestHandle.path();
 
-        const bool ok = QDBusConnection::sessionBus().connect(
-            "org.freedesktop.portal.Desktop",
-            requestHandle.path(),
-            "org.freedesktop.portal.Request",
-            "Response",
-            this,
-            SLOT(onCreateSessionResponse(uint, QVariantMap))
-            );
-        if (!ok) {
-            qCritical() << "Impossible de se connecter au signal Response.";
-        }
+    const QDBusObjectPath requestHandle = reply.value();
+    qInfo() << "[onDBusCreateSessionRequestFinished] -> Request send, handle =" << requestHandle.path();
+
+    const bool ok = QDBusConnection::sessionBus().connect(
+        "org.freedesktop.portal.Desktop",
+        requestHandle.path(),
+        "org.freedesktop.portal.Request",
+        "Response",
+        this,
+        SLOT(onDBusCreateSessionRequestResponse(uint, QVariantMap))
+        );
+    if (!ok) {
+        qCritical() << "[onDBusCreateSessionRequestFinished] -> Can't connect to response signal";
     }
 }
 
-void ScreenCastHandler::onCreateSessionResponse(uint responseCode, const QVariantMap &results)
+void ScreenCastHandler::onDBusCreateSessionRequestResponse(const uint responseCode, const QVariantMap &results)
 {
-    qInfo() << "[onCreateSessionResponse]";
+    qInfo() << "[onDBusCreateSessionRequestResponse]";
 
     if (responseCode != 0) {
         qCritical() << "Échec, code =" << responseCode;
         return;
     }
 
-    QString sessionHandleStr = results.value("session_handle").toString();
-    if (sessionHandleStr.isEmpty()) {
-        qCritical() << "Pas de session_handle dans results";
+    m_DBusSessionHandle = QDBusObjectPath(results.value("session_handle").toString());
+
+    if (m_DBusSessionHandle.path().isEmpty()) {
+        qCritical() << "[onDBusCreateSessionRequestResponse] -> m_DBusSessionHandle is empty";
         return;
     }
 
-    m_sessionHandle = sessionHandleStr;
-
-    setScreenCastState(ScreenCastState::SessionCreated);
+    setScreenCastState(ScreenCastState::SessionCreated); // Passage à l'état suivant
 }
 
-void ScreenCastHandler::selectSources()
+void ScreenCastHandler::DBusSelectSourcesRequest()
 {
-    qInfo() << "[selectSources]";
+    qInfo() << "[DBusSelectSourcesRequest]";
 
-    QVariantMap opts;
-    opts["types"] = (uint)3;        // fenêtres
-    opts["multiple"] = true;        // autoriser plusieurs choix
-    opts["cursor_mode"] = (uint)2;  // curseur intégré
-    opts["handle_token"] = "selectreq";
+    QVariantMap DBusSourcesRequestOptions;
+    DBusSourcesRequestOptions["types"] = (uint)2;        // Application seule (don't work without uint)
+    DBusSourcesRequestOptions["multiple"] = true;        // autoriser plusieurs choix
+    DBusSourcesRequestOptions["cursor_mode"] = (uint)2;  // curseur intégré (don't work without uint)
+    DBusSourcesRequestOptions["handle_token"] = "DBusSourcesHandleToken";
 
-    QDBusObjectPath sessionPath(m_sessionHandle);
-    QDBusPendingCall call = m_portal->asyncCall("SelectSources", sessionPath, opts);
-
+    const QDBusPendingCall call = m_QtDBusInterface->asyncCall("SelectSources", m_DBusSessionHandle, DBusSourcesRequestOptions);
     auto* watcher = new QDBusPendingCallWatcher(call, this);
     connect(
         watcher,
         &QDBusPendingCallWatcher::finished,
         this,
-        &ScreenCastHandler::onSelectSourcesFinished);
+        &ScreenCastHandler::onDBusSelectSourcesRequestFinished);
 
-    setScreenCastState(ScreenCastState::SelectingSources);
+    setScreenCastState(ScreenCastState::SelectingSources); // Passage sur l'état cosmetique
 }
 
-void ScreenCastHandler::onSelectSourcesFinished(QDBusPendingCallWatcher* watcher)
+void ScreenCastHandler::onDBusSelectSourcesRequestFinished(QDBusPendingCallWatcher* watcher)
 {
-    qInfo() << "[onSelectSourcesFinished]";
+    qInfo() << "[onDBusSelectSourcesRequestFinished]";
 
-    QDBusPendingReply<QDBusObjectPath> reply = *watcher;
+    const QDBusPendingReply<QDBusObjectPath> reply = *watcher;
     if (reply.isError()) {
-        qWarning() << "Erreur:" << reply.error().message();
-    } else {
-        const QDBusObjectPath requestHandle = reply.value();
-        qInfo() << "Request handle =" << requestHandle.path();
-
-        // Écoute du signal Response sur ce request
-        QDBusConnection::sessionBus().connect(
-            "org.freedesktop.portal.Desktop",       // service
-            requestHandle.path(),                          // chemin de l'objet Request
-            "org.freedesktop.portal.Request",       // interface
-            "Response",                             // signal
-            this,
-            SLOT(onSelectSourcesResponse(uint, QVariantMap))
-        );
+        qWarning() << "[onDBusSelectSourcesRequestFinished] -> Erreur:" << reply.error().message();
+        return;
     }
-    watcher->deleteLater();
+
+    const QDBusObjectPath requestHandle = reply.value();
+    qInfo() << "[onDBusSelectSourcesRequestFinished] -> Request handle path =" << requestHandle.path();
+
+    // Écoute du signal Response sur ce request
+    QDBusConnection::sessionBus().connect(
+        "org.freedesktop.portal.Desktop",       // service
+        requestHandle.path(),                          // chemin de l'objet Request
+        "org.freedesktop.portal.Request",       // interface
+        "Response",                             // signal
+        this,
+        SLOT(onDBusSelectSourcesRequestResponse(uint, QVariantMap))
+    );
 }
 
-void ScreenCastHandler::onSelectSourcesResponse(uint code, const QVariantMap &results)
+void ScreenCastHandler::onDBusSelectSourcesRequestResponse(const uint responseCode, const QVariantMap &results)
 {
-    qInfo() << "[onSelectSourcesResponse]";
+    qInfo() << "[onDBusSelectSourcesRequestResponse]";
 
-    if (code != 0) {
+    if (responseCode != 0) {
         qWarning() << "Annulé ou échoué";
         return;
     }
 
-    setScreenCastState(ScreenCastState::SourcesSelected);
+    setScreenCastState(ScreenCastState::SourcesSelected); // Passage sur l'état suivant
 }
 
-void ScreenCastHandler::start()
+void ScreenCastHandler::StartScreensSharingRequest()
 {
-    qInfo() << "[start]";
+    qInfo() << "[StartScreensSharingRequest]";
 
-    QVariantMap opts;
-    opts["handle_token"] = "startreq";
+    QVariantMap ScreensSharingOptions;
+    ScreensSharingOptions["handle_token"] = "ScreensSharingHandleToken";
 
-    QDBusObjectPath sessionPath(m_sessionHandle);
-    QDBusPendingCall call = m_portal->asyncCall("Start", sessionPath, QString(""), opts);
+    const QDBusPendingCall call = m_QtDBusInterface->asyncCall("Start", m_DBusSessionHandle, QString(""), ScreensSharingOptions);
 
     auto* watcher = new QDBusPendingCallWatcher(call, this);
     connect(
         watcher,
         &QDBusPendingCallWatcher::finished,
         this,
-        &ScreenCastHandler::onStartFinished);
+        &ScreenCastHandler::onStartScreensSharingRequestFinished);
 
     setScreenCastState(ScreenCastState::Starting);
 }
 
-void ScreenCastHandler::onStartFinished(QDBusPendingCallWatcher *watcher)
+void ScreenCastHandler::onStartScreensSharingRequestFinished(QDBusPendingCallWatcher *watcher)
 {
-    QDBusPendingReply<QDBusObjectPath> reply = *watcher;
-    if (reply.isError()) {
-        qWarning() << "[onStartFinished] Erreur:" << reply.error().message();
-    } else {
-        const QDBusObjectPath requestHandle = reply.value();
-        qInfo() << "[onStartFinished] Request handle =" << requestHandle.path();
+    qInfo() << "[onStartScreensSharingRequestFinished]";
 
-        // Écoute du signal Response sur ce request
-        QDBusConnection::sessionBus().connect(
-            "org.freedesktop.portal.Desktop",       // service
-            requestHandle.path(),                          // chemin de l'objet Request
-            "org.freedesktop.portal.Request",       // interface
-            "Response",                             // signal
-            this,
-            SLOT(onStartResponse(uint, QVariantMap))
-        );
+    const QDBusPendingReply<QDBusObjectPath> reply = *watcher;
+    if (reply.isError()) {
+        qCritical() << "[onStartScreensSharingRequestFinished] Erreur:" << reply.error().message();
+        return;
     }
-    watcher->deleteLater();
+
+    const QDBusObjectPath requestHandle = reply.value();
+    qInfo() << "[onStartScreensSharingRequestFinished] Request handle =" << requestHandle.path();
+
+    // Écoute du signal Response sur ce request
+    QDBusConnection::sessionBus().connect(
+        "org.freedesktop.portal.Desktop",       // service
+        requestHandle.path(),                          // chemin de l'objet Request
+        "org.freedesktop.portal.Request",       // interface
+        "Response",                             // signal
+        this,
+        SLOT(onStartScreensSharingRequestResponse(uint, QVariantMap))
+    );
 }
 
-void ScreenCastHandler::onStartResponse(uint code, const QVariantMap &results)
+void ScreenCastHandler::onStartScreensSharingRequestResponse(const uint code, const QVariantMap &results)
 {
-    qInfo() << "[onStartResponse]";
+    qInfo() << "[onStartScreensSharingRequestResponse]";
 
     if (code != 0) {
         qWarning() << "Échec ou annulé";
         return;
     }
 
-    // récupérer la liste de streams en utilisant notre struct custom
-    m_streams = qdbus_cast<QList<StreamInfo>>(results.value("streams"));
+    m_PortalStreamInfoList = qdbus_cast<QList<PortalStreamInfo>>(results.value("streams")); // Les stream de la selection
 
-    if (m_streams.isEmpty()) {
-        qWarning() << "Aucun stream reçu";
+    if (m_PortalStreamInfoList.isEmpty()) {
+        qWarning() << "[onStartScreensSharingRequestResponse] -> m_PortalStreamInfoList is empty";
         return;
     }
 
-    for (int i = 0; i < m_streams.length(); ++i) {
-        qInfo() << "nodeId =" << m_streams[i].nodeId;
+    for (int i = 0; i < m_PortalStreamInfoList.length(); ++i) {
+        qInfo().noquote() << QString("[onStartScreensSharingRequestResponse] -> m_PortalStreamInfoList[%1].nodeId = %2")
+            .arg(i).arg(m_PortalStreamInfoList[i].nodeId);
 
-        if (m_streams[i].props.contains("source_type")) {
-            qInfo() << "    source_type =" << m_streams[i].props.value("source_type").toUInt();
+        if (m_PortalStreamInfoList[i].props.contains("source_type")) {
+            qInfo() << "    source_type =" << m_PortalStreamInfoList[i].props.value("source_type").toUInt();
         }
         else {
             qInfo() << "stream[" << i << "].props not have source_type";
         }
     }
 
-    setScreenCastState(ScreenCastState::AppSelected);
+    setScreenCastState(ScreenCastState::AppSelected); // Passage à l'état suivant
 }
 
-void ScreenCastHandler::openPipeWireRemote()
+void ScreenCastHandler::OpenPipeWireConnexionRequest()
 {
-    qInfo() << "[openPipeWireRemote]";
+    qInfo() << "[OpenPipeWireConnexionRequest]";
 
-    if (m_sessionHandle.isEmpty()) {
-        qWarning() << "Pas de session handle";
+    if (m_DBusSessionHandle.path().isEmpty()) {
+        qCritical() << "[OpenPipeWireConnexionRequest] -> Pas de session handle";
         return;
     }
 
-    QDBusObjectPath sessionPath(m_sessionHandle);
+    QDBusObjectPath sessionPath(m_DBusSessionHandle);
 
-    QDBusPendingCall call = m_portal->asyncCall("OpenPipeWireRemote", sessionPath, QVariantMap());
+    const QDBusPendingCall call = m_QtDBusInterface->asyncCall("OpenPipeWireRemote", sessionPath, QVariantMap());
     auto* watcher = new QDBusPendingCallWatcher(call, this);
     connect(
         watcher,
         &QDBusPendingCallWatcher::finished,
         this,
-        &ScreenCastHandler::onOpenPipeWireRemoteFinished);
+        &ScreenCastHandler::onOpenPipeWireConnexionRequestFinished);
 
-    setScreenCastState(ScreenCastState::OpeningPipeWireRemote);
+    setScreenCastState(ScreenCastState::OpeningPipeWireRemote); // État cosmetique
 }
 
-void ScreenCastHandler::onOpenPipeWireRemoteFinished(QDBusPendingCallWatcher* watcher)
+void ScreenCastHandler::onOpenPipeWireConnexionRequestFinished(QDBusPendingCallWatcher* watcher)
 {
-    qInfo() << "[onOpenPipeWireRemoteFinished]";
+    qInfo() << "[onOpenPipeWireConnexionRequestFinished]";
 
-    QDBusPendingReply<QDBusUnixFileDescriptor> reply = *watcher;
+    const QDBusPendingReply<QDBusUnixFileDescriptor> reply = *watcher;
     if (reply.isError()) {
-        qWarning() << "Erreur:" << reply.error().message();
+        qWarning() << "[onOpenPipeWireConnexionRequestFinished] -> Erreur:" << reply.error().message();
         return;
     }
 
-    QDBusUnixFileDescriptor file_descriptor = reply.value();
-    m_pwFd = dup(file_descriptor.fileDescriptor());
-    qInfo() << "FD PipeWire reçu =" << m_pwFd;
-    watcher->deleteLater();
+    //= File Descriptor Duping
+    const QDBusUnixFileDescriptor file_descriptor = reply.value();
+    const int fd = file_descriptor.fileDescriptor();
+    if (fd == -1) {
+        qCritical() << "[onOpenPipeWireConnectionFinished] -> invalid fd from portal";
+        return;
+    }
+    m_PipeWireFileDescriptor = dup(fd);
+    if (m_PipeWireFileDescriptor == -1) {
+        qCritical() << "dup() failed:" << strerror(errno);
+        return;
+    }
+    //=
 
-    setScreenCastState(ScreenCastState::PipeWireRemoteCreated);
+    qInfo() << "[onOpenPipeWireConnexionRequestFinished] -> PipeWire File Descriptor =" << m_PipeWireFileDescriptor;
+
+    setScreenCastState(ScreenCastState::PipeWireRemoteCreated); // Passage à l'état suivant
 }
 
 void ScreenCastHandler::openThumbnailsPipe()
 {
     qInfo() << "[openThumbnailsPipe]";
 
-    qInfo() << "[openThumbnailsPipe] -> pw_context_connect_fd avec FD" << m_pwFd;
-    m_pwCore = pw_context_connect_fd(m_pwContext, m_pwFd, nullptr, 0);
-    qInfo() << "[openThumbnailsPipe] -> pw_context_connect_fd renvoie core =" << m_pwCore;
-    if (!m_pwCore) {
+    qInfo() << "[openThumbnailsPipe] -> pw_context_connect_fd avec FD" << m_PipeWireFileDescriptor;
+    m_PipeWireCore = pw_context_connect_fd(m_PipeWireContext, m_PipeWireFileDescriptor, nullptr, 0);
+    qInfo() << "[openThumbnailsPipe] -> pw_context_connect_fd renvoie core =" << m_PipeWireCore;
+    if (!m_PipeWireCore) {
         qWarning() << "[openThumbnailsPipe] -> m_pwCore invalid";
         return;
     }
 
-    m_pwStream = pw_stream_new(m_pwCore, "PrevEveScreenCast", m_StreamProps);
+    m_pwStream = pw_stream_new(m_PipeWireCore, "PrevEveScreenCast", m_PipeWireProperties);
     qInfo() << "[openThumbnailsPipe] -> pw_stream_new renvoie stream =" << m_pwStream;
     if (!m_pwStream) {
         qWarning() << "[openThumbnailsPipe] -> m_pwStream invalid";
@@ -534,11 +537,11 @@ void ScreenCastHandler::openThumbnailsPipe()
     ));
 
 
-    qInfo() << "[openThumbnailsPipe] -> appel pw_stream_connect (ID cible =" << m_streams[0].nodeId << ")";
+    qInfo() << "[openThumbnailsPipe] -> appel pw_stream_connect (ID cible =" << m_PortalStreamInfoList[0].nodeId << ")";
     int streamConnectResult = pw_stream_connect(
         m_pwStream,
         PW_DIRECTION_INPUT,
-        m_streams[0].nodeId,
+        m_PortalStreamInfoList[0].nodeId,
         static_cast<pw_stream_flags>(PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS),
         params,
         1);

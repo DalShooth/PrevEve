@@ -2,7 +2,7 @@
 #include "MainWindow.h"
 #include <QtDBus/qdbusmetatype.h>
 #include <QtDBus>
-#include "StreamInfo.h"
+#include "PortalStreamInfo.h"
 #include "ScreenCastHandler.h"
 
 int main(int argc, char *argv[])
@@ -10,8 +10,8 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
 
     // Enregistrement DBus
-    qDBusRegisterMetaType<StreamInfo>();
-    qDBusRegisterMetaType<QList<StreamInfo>>();
+    qDBusRegisterMetaType<PortalStreamInfo>();
+    qDBusRegisterMetaType<QList<PortalStreamInfo>>();
 
     // IMPORTANT côté KDE/Wayland : expose un DesktopFileName cohérent avec ton AppID/.desktop
     QGuiApplication::setDesktopFileName(QStringLiteral("PrevEve"));
