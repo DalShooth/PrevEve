@@ -1,5 +1,8 @@
 #include "MainWindow.h"
 
+#include <qdbusreply.h>
+#include <qprocess.h>
+
 MainWindow::MainWindow()
 {
     ui.setupUi(this); // UI deviens Ui_MainWindow
@@ -12,11 +15,11 @@ MainWindow::MainWindow()
         [] { qInfo() << "Button clicked"; StreamManager::Instance().init(); });
 
 
-
-
-
-
-
+    connect(
+        ui.pushButton_2,
+        &QPushButton::clicked,
+        this,
+        [] { qInfo() << "Button_2 clicked"; KWinManager::MakeThumbnailAlwaysOnTop("1"); });
 
     connect(
         &StreamManager::Instance(),
