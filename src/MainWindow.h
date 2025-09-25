@@ -11,8 +11,6 @@ class MainWindow final : public QMainWindow
 public:
     explicit MainWindow();
 
-    void raiseAndMovePrevEve();
-
 private:
-    Ui_MainWindow ui;   // objet direct
+    Ui_MainWindow* ui;   // objet direct
 };

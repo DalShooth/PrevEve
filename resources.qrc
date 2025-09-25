@@ -1,0 +1,5 @@
+<!DOCTYPE RCC><RCC version="1.0">
+    <qresource prefix="/scripts">
+        <file alias="KWin_KeepAbove.js">scripts/KWin_KeepAbove.js</file>
+    </qresource>
+</RCC>

@@ -5,27 +5,30 @@
 
 MainWindow::MainWindow()
 {
-    ui.setupUi(this); // UI deviens Ui_MainWindow
+    qInfo() << "CONSTRUCTOR [MainWindow]";
+
+    ui = new Ui_MainWindow();
+    ui->setupUi(this); // UI deviens Ui_MainWindow
 
     // Connecte le bouton test
     connect(
-        ui.pushButton,
+        ui->pushButton,
         &QPushButton::clicked,
         this,
         [] { qInfo() << "Button clicked"; StreamManager::Instance().init(); });
 
 
     connect(
-        ui.pushButton_2,
+        ui->pushButton_2,
         &QPushButton::clicked,
         this,
-        [] { qInfo() << "Button_2 clicked"; KWinManager::MakeThumbnailAlwaysOnTop("1"); });
+        [] { qInfo() << "Button_2 clicked"; KWinManager::MakeThumbnailsAlwaysOnTop("1"); });
 
     connect(
         &StreamManager::Instance(),
         &StreamManager::videoFrameAvailable,
         this,
         [this](const QImage& image) {
-            ui.label->setPixmap(QPixmap::fromImage(image));
+            ui->label->setPixmap(QPixmap::fromImage(image));
     });
 }

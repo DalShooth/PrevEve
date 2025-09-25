@@ -8,6 +8,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_FIND_DEBUG_MODE FALSE)
+set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Core DBus)
 find_package(PkgConfig REQUIRED)
@@ -31,6 +32,7 @@ qt_add_executable(
         src/Thumbnail.cpp
         src/KWinManager.cpp
         src/KWinManager.h
+        resources.qrc
 )
 
 target_include_directories(PrevEve PRIVATE ${PIPEWIRE_INCLUDE_DIRS})

@@ -1,8 +1,11 @@
 #pragma once
-#include <QDBusMessage>
+#include <QDBusInterface>
 
 class KWinManager
 {
 public:
-    static void MakeThumbnailAlwaysOnTop(const QString &CharacterName);
+    static void MakeThumbnailsAlwaysOnTop(const QString &CharacterName);
+
+private:
+    //QDBusInterface m_DBusInterface;
 };
