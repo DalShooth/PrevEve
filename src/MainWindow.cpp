@@ -16,10 +16,4 @@ MainWindow::MainWindow()
         &QPushButton::clicked,
         this,
         [] { qInfo() << "Button clicked"; StreamManager::Instance().init(); });
-
-    connect(
-        m_Ui->SetupPreviewsButton,
-        &QPushButton::clicked,
-        this,
-        [] { qInfo() << "Button_2 clicked"; KWinManager::MakeThumbnailsAlwaysOnTop("1"); });
 }
