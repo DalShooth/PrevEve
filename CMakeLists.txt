@@ -29,6 +29,7 @@ qt_add_executable(
         src/StreamManager.h
         src/PortalStreamInfo.h
         src/Thumbnail.ui
+        src/Thumbnail.h
         src/Thumbnail.cpp
         src/KWinManager.cpp
         src/KWinManager.h

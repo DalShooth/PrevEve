@@ -12,13 +12,13 @@ MainWindow::MainWindow()
 
     // Connecte le bouton test
     connect(
-        m_Ui->pushButton,
+        m_Ui->SetupPreviewsButton,
         &QPushButton::clicked,
         this,
         [] { qInfo() << "Button clicked"; StreamManager::Instance().init(); });
 
     connect(
-        m_Ui->pushButton_2,
+        m_Ui->SetupPreviewsButton,
         &QPushButton::clicked,
         this,
         [] { qInfo() << "Button_2 clicked"; KWinManager::MakeThumbnailsAlwaysOnTop("1"); });

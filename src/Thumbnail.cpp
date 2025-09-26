@@ -7,7 +7,6 @@
 #include <spa/debug/types.h>
 #include <spa/param/format-utils.h>
 #include <spa/param/video/raw-utils.h>
-
 #include "KWinManager.h"
 
 Thumbnail::Thumbnail(QWidget* parent,
@@ -21,7 +20,7 @@ Thumbnail::Thumbnail(QWidget* parent,
     m_Ui->setupUi(this); // UI deviens Ui_ThumbnailWidget
     setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
     setWindowTitle(QString("Thumbnail - %1").arg(StreamInfo->nodeId));
-    setStyleSheet("background-color: rgba(0, 0, 0, 255);");
+    setStyleSheet("background-color: red;");
 
     // resize(200, 150);
     //=
