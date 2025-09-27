@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>364</width>
+    <width>400</width>
     <height>200</height>
    </rect>
   </property>
@@ -51,9 +51,13 @@
             <height>70</height>
            </size>
           </property>
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
           <property name="text">
-           <string>Setup or
-re-Setup
+           <string>Setup / re-Setup
 Previews</string>
           </property>
           <property name="iconSize">
