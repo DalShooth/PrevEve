@@ -1,11 +1,9 @@
-name: Build and Release PrevEve
+name: Build and Commit PrevEve
 
 on:
   push:
     branches:
       - master
-    tags:
-      - 'v*.*.*' # Trigger releases for tags like v1.0.0
   pull_request:
     branches:
       - master
@@ -14,7 +12,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Required for creating releases and uploading assets
+      contents: write # Required for committing to the repository
 
     steps:
     # Checkout the repository code
@@ -55,37 +53,29 @@ jobs:
         cd build
         make -j$(nproc)
 
-    # Verify the executable
-    - name: Check executable
+    # Verify and copy the executable to the repository root
+    - name: Copy executable to root
       run: |
         ls -l build/bin/PrevEve || { echo "Error: PrevEve not found"; exit 1; }
         chmod +x build/bin/PrevEve
+        cp build/bin/PrevEve ../PrevEve
+        ls -l ../PrevEve
 
-    # Upload executable as an artifact (for all builds)
+    # Upload executable as an artifact (optional, for debugging)
     - name: Upload Executable Artifact
       uses: actions/upload-artifact@v4
       with:
         name: PrevEve-executable
-        path: build/bin/PrevEve
+        path: PrevEve
         retention-days: 5
 
-    # Create a release and upload the executable (only for tagged pushes)
-    - name: Debug Release Context
-      if: startsWith(github.ref, 'refs/tags/v')
+    # Commit and push the executable to the repository
+    - name: Commit PrevEve to repository
       run: |
-        echo "GITHUB_REF: $GITHUB_REF"
-        echo "Tag: ${{ github.ref_name }}"
-        ls -l build/bin/PrevEve || { echo "Error: PrevEve not found for release"; exit 1; }
-
-    - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/v')
-      uses: softprops/action-gh-release@v2
-      with:
-        files: build/bin/PrevEve
-        name: Release ${{ github.ref_name }}
-        tag_name: ${{ github.ref_name }}
-        draft: false
-        prerelease: false
-        fail_on_unmatched_files: true
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "actions@github.com"
+        git add PrevEve
+        git commit -m "Add compiled PrevEve executable"
+        git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
