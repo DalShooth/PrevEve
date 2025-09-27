@@ -1,0 +1,46 @@
+name: Build PrevEve
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the repository code
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Set up the environment and install dependencies
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          cmake \
+          make \
+          qt6-base-dev \
+          libgstreamer1.0-dev \
+          libgstreamer-plugins-base1.0-dev \
+          libpipewire-0.3-dev
+
+    # Configure the project with CMake
+    - name: Configure CMake
+      run: cmake .
+
+    # Build the project with Make
+    - name: Build
+      run: make
+
+    # Optional: Verify the executable
+    - name: Check executable
+      run: |
+        chmod +x PrevEve
+        ls -l PrevEve
+        # Note: Running ./PrevEve may require a display server, which is not available in CI.
+        # You can skip running it or set up a virtual display if needed.
