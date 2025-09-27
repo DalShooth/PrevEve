@@ -15,7 +15,7 @@ StreamManager::StreamManager()
     qInfo() << "CONSTRUCTOR [StreamManager]";
 
     // Canal de communication persistant entre l'app Qt et le service org.freedesktop.portal.ScreenCast
-    m_QtDBusInterface = new QDBusInterface(
+    m_QtDBusScreenCastInterface = new QDBusInterface(
         "org.freedesktop.portal.Desktop",       // service
         "/org/freedesktop/portal/desktop",      // chemin
         "org.freedesktop.portal.ScreenCast",    // interface
@@ -69,10 +69,7 @@ StreamManager::StreamManager()
 
 StreamManager::~StreamManager()
 {
-    // Todo -> refaire le deconstructeur
-    m_PipeWireCore = nullptr;
-    m_PipeWireContext = nullptr;
-    m_PipeWireLoop = nullptr;
+    m_QtDBusScreenCastInterface->asyncCall("Close");
     pw_deinit();
 }
 
@@ -133,7 +130,7 @@ void StreamManager::DBusCreateSessionRequest() // Requête de création de sessi
     SessionRequestOptions["session_handle_token"] = "PrevEveSessionHandleToken";
     SessionRequestOptions["handle_token"] = "PrevEveHandleToken";
 
-    const QDBusPendingCall call = m_QtDBusInterface->asyncCall("CreateSession", SessionRequestOptions);
+    const QDBusPendingCall call = m_QtDBusScreenCastInterface->asyncCall("CreateSession", SessionRequestOptions);
     QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher(call, this);
     connect(
         watcher,
@@ -210,8 +207,8 @@ void StreamManager::DBusSelectSourcesRequest()
     DBusSourcesRequestOptions["cursor_mode"] = (uint)2;  // curseur intégré (don't work without uint)
     DBusSourcesRequestOptions["handle_token"] = "DBusSourcesHandleToken";
 
-    const QDBusPendingCall call = m_QtDBusInterface->asyncCall("SelectSources", m_DBusSessionHandle, DBusSourcesRequestOptions);
-    QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher(call, this);
+    const QDBusPendingCall call = m_QtDBusScreenCastInterface->asyncCall("SelectSources", m_DBusSessionHandle, DBusSourcesRequestOptions);
+    const QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher(call, this);
     connect(
         watcher,
         &QDBusPendingCallWatcher::finished,
@@ -226,9 +223,9 @@ void StreamManager::onDBusSelectSourcesRequestFinished(QDBusPendingCallWatcher* 
     qInfo() << "[onDBusSelectSourcesRequestFinished]";
 
     const QDBusPendingReply<QDBusObjectPath> reply = *watcher;
+    watcher->deleteLater();
     if (reply.isError()) {
         qWarning() << "[onDBusSelectSourcesRequestFinished] -> Erreur:" << reply.error().message();
-        watcher->deleteLater();
         return;
     }
 
@@ -244,7 +241,6 @@ void StreamManager::onDBusSelectSourcesRequestFinished(QDBusPendingCallWatcher* 
         this,
         SLOT(onDBusSelectSourcesRequestResponse(uint, QVariantMap))
     );
-    watcher->deleteLater();
 }
 
 void StreamManager::onDBusSelectSourcesRequestResponse(const uint responseCode, const QVariantMap &results)
@@ -266,9 +262,9 @@ void StreamManager::StartScreensSharingRequest()
     QVariantMap ScreensSharingOptions;
     ScreensSharingOptions["handle_token"] = "ScreensSharingHandleToken";
 
-    const QDBusPendingCall call = m_QtDBusInterface->asyncCall("Start", m_DBusSessionHandle, QString(""), ScreensSharingOptions);
+    const QDBusPendingCall call = m_QtDBusScreenCastInterface->asyncCall("Start", m_DBusSessionHandle, QString(""), ScreensSharingOptions);
 
-    QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher(call, this);
+    const QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher(call, this);
     connect(
         watcher,
         &QDBusPendingCallWatcher::finished,
@@ -278,11 +274,12 @@ void StreamManager::StartScreensSharingRequest()
     setScreenCastState(ScreenCastState::Starting);
 }
 
-void StreamManager::onStartScreensSharingRequestFinished(const QDBusPendingCallWatcher *watcher)
+void StreamManager::onStartScreensSharingRequestFinished(QDBusPendingCallWatcher *watcher)
 {
     qInfo() << "[onStartScreensSharingRequestFinished]";
 
     const QDBusPendingReply<QDBusObjectPath> reply = *watcher;
+    watcher->deleteLater();
     if (reply.isError()) {
         qCritical() << "[onStartScreensSharingRequestFinished] Erreur:" << reply.error().message();
         return;
@@ -307,7 +304,16 @@ void StreamManager::onStartScreensSharingRequestResponse(const uint code, const 
     qInfo() << "[onStartScreensSharingRequestResponse]";
 
     if (code != 0) {
-        qWarning() << "Échec ou annulé";
+        qCritical() << "Fail, code =" << code;
+        if (results.isEmpty()) {
+            qCritical() << "[onStartScreensSharingRequestResponse] -> Result is empty, its a User Cancel ?";
+        } else {
+            qCritical() << "[onStartScreensSharingRequestResponse] -> results dump:";
+            for (auto it = results.begin(); it != results.end(); ++it) {
+                qCritical() << "   " << it.key() << "=" << it.value();
+            }
+        }
+        setScreenCastState(ScreenCastState::Idle);
         return;
     }
 
@@ -344,8 +350,8 @@ void StreamManager::OpenPipeWireConnexionRequest()
 
     QDBusObjectPath sessionPath(m_DBusSessionHandle);
 
-    const QDBusPendingCall call = m_QtDBusInterface->asyncCall("OpenPipeWireRemote", sessionPath, QVariantMap());
-    auto* watcher = new QDBusPendingCallWatcher(call, this);
+    const QDBusPendingCall call = m_QtDBusScreenCastInterface->asyncCall("OpenPipeWireRemote", sessionPath, QVariantMap());
+    const auto* watcher = new QDBusPendingCallWatcher(call, this);
     connect(
         watcher,
         &QDBusPendingCallWatcher::finished,
@@ -355,11 +361,12 @@ void StreamManager::OpenPipeWireConnexionRequest()
     setScreenCastState(ScreenCastState::OpeningPipeWireRemote); // État cosmetique
 }
 
-void StreamManager::onOpenPipeWireConnexionRequestFinished(const QDBusPendingCallWatcher* watcher)
+void StreamManager::onOpenPipeWireConnexionRequestFinished(QDBusPendingCallWatcher* watcher)
 {
     qInfo() << "[onOpenPipeWireConnexionRequestFinished]";
 
     const QDBusPendingReply<QDBusUnixFileDescriptor> reply = *watcher;
+    watcher->deleteLater();
     if (reply.isError()) {
         qWarning() << "[onOpenPipeWireConnexionRequestFinished] -> Erreur:" << reply.error().message();
         return;
@@ -395,7 +402,40 @@ void StreamManager::onOpenPipeWireConnexionRequestFinished(const QDBusPendingCal
 void StreamManager::SetupPreviews() {
     qInfo() << "[SetupPreviews]";
 
-    // todo -> détruire les thumbnails, détruire le tableau, détruire PipeWire session
-
     DBusCreateSessionRequest();
+}
+
+void StreamManager::ClosePreviews()
+{
+    qInfo() << "[ClosePreviews]";
+
+    for (Thumbnail* thumb : m_ThumbnailsList) {
+        if (thumb) {
+            thumb->deleteLater();   // destruction lors du retour à l’event loop
+        }
+    }
+    m_ThumbnailsList.clear();
+    m_PortalStreamInfoList.clear();
+    if (!m_DBusSessionHandle.path().isEmpty()) {
+        QDBusInterface sessionIface(
+            "org.freedesktop.portal.Desktop",
+            m_DBusSessionHandle.path(),
+            "org.freedesktop.portal.Session",
+            QDBusConnection::sessionBus());
+
+        sessionIface.asyncCall("Close");
+        m_DBusSessionHandle = QDBusObjectPath();
+    }
+    // if (m_PipeWireCore) {
+    //     pw_core_disconnect(m_PipeWireCore);
+    //     qInfo() << "[SetupPreviews] -> m_PipeWireCore disconnected";
+    //     m_PipeWireCore = nullptr;
+    // }
+    // if (m_PipeWireFileDescriptor >= 0) {
+    //     close(m_PipeWireFileDescriptor);
+    //     qInfo() << "m_PipeWireFileDescriptor closed";
+    //     m_PipeWireFileDescriptor = -1;
+    // }
+
+    setScreenCastState(ScreenCastState::Idle);
 }

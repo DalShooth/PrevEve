@@ -18,6 +18,8 @@ public:
     void onVideoFrameAvailable(const QImage &image);
 
 protected:
+    ~Thumbnail();
+
     void mousePressEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
 

@@ -35,22 +35,25 @@ public:
     }
     //=
 
+    ScreenCastState getScreenCastState() const { return m_StreamState; } // StateMachine
+
     // Set la ref à la fenetre principal
     void SetMainWindow(QMainWindow* InMainWindow) {
         m_MainWindow = InMainWindow;
     }
 
-    void SetupPreviews(); /* Nétoie la session si présente -> enclenche la sequence de création de
+    void SetupPreviews(); /* enclenche la sequence de création de
         la session PipeWire -> commence le stream des applications séléctionnées -> crée les Thumbnails */
+    void ClosePreviews(); // Nétoie la session si présente
 
 public slots:
     void onDBusCreateSessionRequestFinished(QDBusPendingCallWatcher* watcher); // Réponse de création de requete de création de session
     void onDBusCreateSessionRequestResponse(uint responseCode, const QVariantMap& results); // Résultat de la requête de création de session
     void onDBusSelectSourcesRequestFinished(QDBusPendingCallWatcher* watcher); // Réponse de création de requête de sélection des sources
     void onDBusSelectSourcesRequestResponse(uint responseCode, const QVariantMap &results); // Résultat de la requête de selection des sources
-    void onStartScreensSharingRequestFinished(const QDBusPendingCallWatcher* watcher); // Réponse de la création de la requête de démarrage de stream
+    void onStartScreensSharingRequestFinished(QDBusPendingCallWatcher* watcher); // Réponse de la création de la requête de démarrage de stream
     void onStartScreensSharingRequestResponse(uint code, const QVariantMap &results); // Résultat de la requête de démarrage de stream (pop-up)
-    void onOpenPipeWireConnexionRequestFinished(const QDBusPendingCallWatcher* watcher); // Réponse de la création de requête de création de connexion PipeWire
+    void onOpenPipeWireConnexionRequestFinished(QDBusPendingCallWatcher* watcher); // Réponse de la création de requête de création de connexion PipeWire
 
 private:
     explicit StreamManager(); // Constructor
@@ -61,7 +64,7 @@ private:
     StreamManager& operator=(const StreamManager&) = delete;
     //=
 
-    QMainWindow* m_MainWindow; // Ref Fenetre principal
+    QMainWindow* m_MainWindow = nullptr; // Ref Fenetre principal
 
     //= State Machine Linéaire
     ScreenCastState m_StreamState = ScreenCastState::Idle;
@@ -74,7 +77,7 @@ private:
     void StartScreensSharingRequest(); // Requête de démarrage (open the pop-up)
     void OpenPipeWireConnexionRequest(); // Requête de création de la connexion PipeWire
 
-    QDBusInterface* m_QtDBusInterface; // Interface D-Bus
+    QDBusInterface* m_QtDBusScreenCastInterface; // Interface D-Bus pour ScreenCast
     //pw_properties *m_PipeWireProperties; // Propriétés PipeWire
 
     QDBusObjectPath m_DBusSessionHandle; // Session D-Bus

@@ -100,6 +100,12 @@ Thumbnail::Thumbnail(QWidget* parent,
     //
 }
 
+Thumbnail::~Thumbnail()
+{
+    pw_stream_disconnect(m_PipeWireStream);
+    pw_stream_destroy(m_PipeWireStream);
+}
+
 void Thumbnail::mousePressEvent(QMouseEvent *event) {
     if (event->button() == Qt::RightButton) {
         window()->windowHandle()->startSystemMove();
