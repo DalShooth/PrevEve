@@ -40,16 +40,17 @@ public:
         m_MainWindow = InMainWindow;
     }
 
-    void init(); // Todo -> changer cette merde
+    void SetupPreviews(); /* Nétoie la session si présente -> enclenche la sequence de création de
+        la session PipeWire -> commence le stream des applications séléctionnées -> crée les Thumbnails */
 
 public slots:
     void onDBusCreateSessionRequestFinished(QDBusPendingCallWatcher* watcher); // Réponse de création de requete de création de session
     void onDBusCreateSessionRequestResponse(uint responseCode, const QVariantMap& results); // Résultat de la requête de création de session
     void onDBusSelectSourcesRequestFinished(QDBusPendingCallWatcher* watcher); // Réponse de création de requête de sélection des sources
     void onDBusSelectSourcesRequestResponse(uint responseCode, const QVariantMap &results); // Résultat de la requête de selection des sources
-    void onStartScreensSharingRequestFinished(QDBusPendingCallWatcher* watcher); // Réponse de la création de la requête de démarrage de stream
+    void onStartScreensSharingRequestFinished(const QDBusPendingCallWatcher* watcher); // Réponse de la création de la requête de démarrage de stream
     void onStartScreensSharingRequestResponse(uint code, const QVariantMap &results); // Résultat de la requête de démarrage de stream (pop-up)
-    void onOpenPipeWireConnexionRequestFinished(QDBusPendingCallWatcher* watcher); // Réponse de la création de requête de création de connexion PipeWire
+    void onOpenPipeWireConnexionRequestFinished(const QDBusPendingCallWatcher* watcher); // Réponse de la création de requête de création de connexion PipeWire
 
 private:
     explicit StreamManager(); // Constructor
@@ -63,19 +64,15 @@ private:
     QMainWindow* m_MainWindow; // Ref Fenetre principal
 
     //= State Machine Linéaire
-    void onChangeScreenCastState();
     ScreenCastState m_StreamState = ScreenCastState::Idle;
-    //=
-
+    void onChangeScreenCastState();
     void setScreenCastState(ScreenCastState NewScreenCastState); // StateMachine Setter
+    //=
 
     void DBusCreateSessionRequest(); // Requête de création de session
     void DBusSelectSourcesRequest(); // Requête de selection des sources (not the pop-up, only sources settings*)
     void StartScreensSharingRequest(); // Requête de démarrage (open the pop-up)
     void OpenPipeWireConnexionRequest(); // Requête de création de la connexion PipeWire
-
-    //void openThumbnailsPipe(); // Todo
-    void CreatePreviews(); // Crée les instances de stream
 
     QDBusInterface* m_QtDBusInterface; // Interface D-Bus
     //pw_properties *m_PipeWireProperties; // Propriétés PipeWire
@@ -87,9 +84,12 @@ private:
     pw_loop* m_PipeWireLoop; // Boucle d’événements PipeWire
     QSocketNotifier* m_PipeWireLoopSocketNotifier; // Notifier PipeWireLoop
     pw_context* m_PipeWireContext; /* Représente PrevEve côté serveur PipeWire,
-    nécessaire pour la connexion au démon PipeWire (pw-core),
-    l’authentification et les permissions, les ressources (streams, nodes, etc.) */
+        nécessaire pour la connexion au démon PipeWire (pw-core),
+        l’authentification et les permissions, les ressources (streams, nodes, etc.) */
     pw_core* m_PipeWireCore = nullptr; // Connexion unique au démon PipeWire
 
     QList<Thumbnail*> m_ThumbnailsList; // Liste des Widget preview
+
+    signals:
+    void onStreamsReady();
 };
