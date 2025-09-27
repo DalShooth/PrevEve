@@ -10,7 +10,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_FIND_DEBUG_MODE FALSE)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 6.8.3 EXACT REQUIRED COMPONENTS Widgets Core DBus)
+find_package(Qt6 6.4.2 EXACT REQUIRED COMPONENTS Widgets Core DBus)
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(GST REQUIRED gstreamer-1.0>=1.20)
