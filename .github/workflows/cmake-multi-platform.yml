@@ -1,9 +1,11 @@
-name: Build PrevEve
+name: Build and Release PrevEve
 
 on:
   push:
     branches:
       - master
+    tags:
+      - 'v*.*.*' # Trigger releases for tags like v1.0.0
   pull_request:
     branches:
       - master
@@ -11,13 +13,27 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required for creating releases and uploading assets
 
     steps:
     # Checkout the repository code
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # Set up the environment and install dependencies
+    # Cache dependencies to speed up builds
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          /usr/lib/x86_64-linux-gnu
+          /usr/include
+          ~/.cache/apt
+        key: ${{ runner.os }}-deps-${{ hashFiles('**/CMakeLists.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-deps-
+
+    # Install dependencies
     - name: Install dependencies
       run: |
         sudo apt-get update
@@ -29,18 +45,35 @@ jobs:
           libgstreamer-plugins-base1.0-dev \
           libpipewire-0.3-dev
 
-    # Configure the project with CMake
+    # Configure the project with CMake in a build directory
     - name: Configure CMake
-      run: cmake .
+      run: |
+        mkdir -p build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=$PWD/bin
 
     # Build the project with Make
     - name: Build
-      run: make
+      run: |
+        cd build
+        make -j$(nproc) # Use parallel compilation
 
-    # Optional: Verify the executable
+    # Verify the executable
     - name: Check executable
       run: |
-        chmod +x PrevEve
-        ls -l PrevEve
-        # Note: Running ./PrevEve may require a display server, which is not available in CI.
-        # You can skip running it or set up a virtual display if needed.
+        ls -l build/bin/PrevEve
+        chmod +x build/bin/PrevEve
+        # Note: Running ./build/bin/PrevEve may require a display server, skip in CI
+
+    # Create a release and upload the executable (only for tagged pushes)
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: build/bin/PrevEve
+        name: Release ${{ github.ref_name }}
+        tag_name: ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
