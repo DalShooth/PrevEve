@@ -23,7 +23,7 @@ jobs:
     - name: Cache apt packages
       uses: actions/cache@v4
       with:
-        path: /var/cache/apt
+        path: /var/cache/apt/archives
         key: ${{ runner.os }}-apt-${{ hashFiles('**/CMakeLists.txt') }}
         restore-keys: |
           ${{ runner.os }}-apt-
@@ -39,6 +39,10 @@ jobs:
           libgstreamer1.0-dev \
           libgstreamer-plugins-base1.0-dev \
           libpipewire-0.3-dev
+        # Clean up lock files to avoid tar issues
+        sudo rm -f /var/cache/apt/archives/lock
+        sudo rm -f /var/cache/apt/archives/partial/*
+      continue-on-error: true # Allow build to proceed if apt fails
 
     # Configure the project with CMake in a build directory
     - name: Configure CMake
@@ -69,13 +73,14 @@ jobs:
         path: PrevEve
         retention-days: 5
 
-    # Commit and push the executable to the repository
+    # Commit and push the executable to the repository (only for push events)
     - name: Commit PrevEve to repository
+      if: github.event_name == 'push'
       run: |
         git config --global user.name "GitHub Actions Bot"
         git config --global user.email "actions@github.com"
         git add PrevEve
-        git commit -m "Add compiled PrevEve executable"
+        git commit -m "Add compiled PrevEve executable" || echo "No changes to commit"
         git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
