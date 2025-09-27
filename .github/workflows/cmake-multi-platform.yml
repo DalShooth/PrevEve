@@ -56,14 +56,21 @@ jobs:
     - name: Build
       run: |
         cd build
-        make -j$(nproc) # Use parallel compilation
+        make -j$(nproc)
 
     # Verify the executable
     - name: Check executable
       run: |
-        ls -l build/bin/PrevEve
+        ls -l build/bin/PrevEve || echo "Error: PrevEve not found"
         chmod +x build/bin/PrevEve
-        # Note: Running ./build/bin/PrevEve may require a display server, skip in CI
+
+    # Upload executable as an artifact (for all builds)
+    - name: Upload Executable Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PrevEve-executable
+        path: build/bin/PrevEve
+        retention-days: 5
 
     # Create a release and upload the executable (only for tagged pushes)
     - name: Create Release
@@ -75,5 +82,7 @@ jobs:
         tag_name: ${{ github.ref_name }}
         draft: false
         prerelease: false
+        fail_on_unmatched_files: true # Fail if file is not found
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      continue-on-error: false # Ensure failure is logged
