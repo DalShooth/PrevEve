@@ -2,28 +2,53 @@
 
 #include <qtimer.h>
 #include <QWindow>
+#include <QToolButton>
+#include <QStyle>
 #include <pipewire/keys.h>
 #include <spa/debug/pod.h>
 #include <spa/debug/types.h>
 #include <spa/param/format-utils.h>
 #include <spa/param/video/raw-utils.h>
 #include "KWinManager.h"
+#include "MainWindow.h"
 
 Thumbnail::Thumbnail(QWidget* parent,
-    pw_core* PipeWireCore,
-    PortalStreamInfo* StreamInfo) : QWidget(parent), m_PipeWireCore(PipeWireCore), m_StreamInfo(StreamInfo)
+                     pw_core* PipeWireCore,
+                     PortalStreamInfo* StreamInfo) : QWidget(parent), m_PipeWireCore(PipeWireCore), m_StreamInfo(StreamInfo)
 {
     qInfo() << "CONSTRUCTOR [Thumbnail]";
+
+    const MainWindow* mainWindow = qobject_cast<MainWindow*>(parent); // Parent MainWindow
 
     //= UI
     m_Ui = new Ui_ThumbnailWidget;
     m_Ui->setupUi(this); // UI deviens Ui_ThumbnailWidget
+
+    // Changement de taille: Maintenant + Dynamique
+    resize(
+        mainWindow->GetUi().WidthLineEdit->text().toInt(),
+        mainWindow->GetUi().HeightLineEdit->text().toInt());
+    connect(
+        mainWindow,
+        &MainWindow::onThumbnailsSizeSettingsChanged,
+        this,
+        [this, mainWindow] {
+            resize(
+                mainWindow->GetUi().WidthLineEdit->text().toInt(),
+                mainWindow->GetUi().HeightLineEdit->text().toInt());
+    });
+
     setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
     setWindowTitle(QString("Thumbnail - %1").arg(StreamInfo->nodeId));
     setStyleSheet("background-color: red;");
 
-    // resize(200, 150);
-    //=
+    // Bouton de fermeture
+    m_closeBtn = new QToolButton(this);
+    m_closeBtn->setIcon(style()->standardIcon(QStyle::SP_TitleBarCloseButton));
+    m_closeBtn->setFixedSize(20, 20);
+    m_closeBtn->move(width() - m_closeBtn->width() - 5, 5);
+    m_closeBtn->raise();  // Assure qu'il est au-dessus du QLabel
+    connect(m_closeBtn, &QToolButton::clicked, this, &QWidget::close);
 
     //= PipeWire
     // Dictionnaire de propriétés PipeWire qui décrit le flux comme vidéo de capture

@@ -7,6 +7,8 @@
 #include <pipewire/pipewire.h>
 #include <spa/debug/types.h>
 #include <spa/debug/pod.h>
+
+#include "MainWindow.h"
 #include "Thumbnail.h"
 
 
@@ -78,9 +80,13 @@ void StreamManager::onChangeScreenCastState() // Linear State Machine
     switch (m_StreamState) {
         case ScreenCastState::Idle: // Cosmetique
             qInfo() << "[onChangeScreenCastState] -> Idle";
+            m_MainWindow->GetUi().SetupPreviewsButton->setText("Setup\nPreviews");
+            m_MainWindow->GetUi().SetupPreviewsButton->setEnabled(true);
             break;
         case ScreenCastState::CreatingSession: // Cosmetique
             qInfo() << "[onChangeScreenCastState] -> CreatingSession...";
+            m_MainWindow->GetUi().SetupPreviewsButton->setText("...");
+            m_MainWindow->GetUi().SetupPreviewsButton->setEnabled(false);
             break;
         case ScreenCastState::SessionCreated: // Actif
             qInfo() << "[onChangeScreenCastState] -> SessionCreated";
@@ -110,6 +116,8 @@ void StreamManager::onChangeScreenCastState() // Linear State Machine
         case ScreenCastState::Active: // Actif
             qInfo() << "[onChangeScreenCastState] -> Streams is Active";
             emit onStreamsReady(); // Signalé la préparation des streams
+            m_MainWindow->GetUi().SetupPreviewsButton->setEnabled(true);
+            m_MainWindow->GetUi().SetupPreviewsButton->setText("Remove\nPreview");
             break;
         default:
             break;

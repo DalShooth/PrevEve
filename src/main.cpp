@@ -1,3 +1,5 @@
+/* Create by Wanek, for playing EVE on Linux, fu** you Windows */
+
 #include "MainWindow.h"
 #include <QtDBus/qdbusmetatype.h>
 #include <QtDBus>

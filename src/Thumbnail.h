@@ -4,6 +4,8 @@
 #include "ui_Thumbnail.h"
 #include "StreamManager.h"
 
+class QToolButton;
+
 struct pw_core;
 
 class Thumbnail final : public QWidget
@@ -11,14 +13,14 @@ class Thumbnail final : public QWidget
     Q_OBJECT
 public:
     explicit Thumbnail(QWidget* parent,
-        pw_core* PimeWireCore,
+        pw_core* PipeWireCore,
         PortalStreamInfo* StreamInfo); // Constructor
 
     signals:
     void onVideoFrameAvailable(const QImage &image);
 
 protected:
-    ~Thumbnail();
+    ~Thumbnail() override;
 
     void mousePressEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
@@ -80,14 +82,16 @@ private:
     const char *streamStateToStr(pw_stream_state state) const;
 
     Ui_ThumbnailWidget* m_Ui;
-    pw_core* m_PipeWireCore;
+    QToolButton* m_closeBtn;
+
+    pw_core* m_PipeWireCore; // Core PipeWire
     pw_properties* m_PipeWireProperties; // Propriétés PipeWire
-    pw_stream* m_PipeWireStream;
-    spa_hook m_StreamListener;
-    uint8_t m_buffer[1024] = {};
+    pw_stream* m_PipeWireStream; // Stream PipeWire
+    spa_hook m_StreamListener; // Catalogue abonnement du Stream PipeWire
+    uint8_t m_buffer[1024] = {}; // Buffer vidéo
 
-    PortalStreamInfo* m_StreamInfo;
+    PortalStreamInfo* m_StreamInfo; // Info du stream
 
-    uint32_t m_videoWidth;
-    uint32_t m_videoHeight;
+    uint32_t m_videoWidth; // Largeur du rendu (!= TAILLE DE LA THUMBNAIL)
+    uint32_t m_videoHeight; // Hauteur du rendu (!= TAILLE DE LA THUMBNAIL)
 };

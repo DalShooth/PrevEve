@@ -4,9 +4,9 @@
 #include <QDBusPendingCallWatcher>
 #include <QVariantMap>
 #include <pipewire/stream.h>
-#include "MainWindow.h"
 #include "PortalStreamInfo.h"
 
+class MainWindow;
 class Thumbnail;
 class QSocketNotifier;
 
@@ -38,7 +38,7 @@ public:
     ScreenCastState getScreenCastState() const { return m_StreamState; } // StateMachine
 
     // Set la ref à la fenetre principal
-    void SetMainWindow(QMainWindow* InMainWindow) {
+    void SetMainWindow(MainWindow* InMainWindow) {
         m_MainWindow = InMainWindow;
     }
 
@@ -64,7 +64,7 @@ private:
     StreamManager& operator=(const StreamManager&) = delete;
     //=
 
-    QMainWindow* m_MainWindow = nullptr; // Ref Fenetre principal
+    MainWindow* m_MainWindow = nullptr; // Ref Fenetre principal
 
     //= State Machine Linéaire
     ScreenCastState m_StreamState = ScreenCastState::Idle;
