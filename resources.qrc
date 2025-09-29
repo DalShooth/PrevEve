@@ -1,5 +1,8 @@
 <!DOCTYPE RCC><RCC version="1.0">
-    <qresource prefix="/scripts">
-        <file alias="KWin_KeepAbove.js">scripts/KWin_KeepAbove.js</file>
+    <qresource>
+        <file>scripts/KWin_KeepAbove.js</file>
+        <file>scripts/KWin_SetPosition.js</file>
+        <file>assets/EveWPreview.png</file>
+        <file>scripts/eve-w-preview.desktop</file>
     </qresource>
 </RCC>

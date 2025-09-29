@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QMouseEvent>
+#include <QToolButton>
+
 #include "ui_Thumbnail.h"
 #include "StreamManager.h"
 
@@ -23,6 +25,7 @@ protected:
     ~Thumbnail() override;
 
     void mousePressEvent(QMouseEvent* event) override;
+    //void mouseReleaseEvent(QMouseEvent* event) override; <- DO NOT USE, DO NOT WORK ON KDE
     void showEvent(QShowEvent* event) override;
 
 private:
@@ -80,6 +83,8 @@ private:
     }
 
     const char *streamStateToStr(pw_stream_state state) const;
+
+    void setCloseButtonPosition() const { m_closeBtn->move(width() - m_closeBtn->width() - 5, 5); }
 
     Ui_ThumbnailWidget* m_Ui;
     QToolButton* m_closeBtn;

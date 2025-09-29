@@ -2,6 +2,8 @@
 
 #include <QValidator>
 
+#include "ConfigManager.h"
+
 MainWindow::MainWindow()
 {
     qInfo() << "CONSTRUCTOR [MainWindow]";
@@ -11,35 +13,41 @@ MainWindow::MainWindow()
     m_Ui->setupUi(this); // UI deviens Ui_MainWindow
     setFixedSize(400, 200); // Fixe la taille de la fenetre
 
-    m_SizeValidator = new QIntValidator(0, 720, this); // IntValidator pour les champs 'Size'
+    // Charger la taille depuis .conf
+    const QSize loadedThumbnailsSize = ConfigManager::Instance().loadThumbnailsSize();
+    m_Ui->WidthLineEdit->setText(QString::number(loadedThumbnailsSize.width()));
+    m_Ui->HeightLineEdit->setText(QString::number(loadedThumbnailsSize.height()));
 
-    // Faire du champ 'Largeur' uniquement un champ Int entre 180 et 720
+    m_SizeValidator = new QIntValidator(180, 720, this); // IntValidator pour les champs 'Size'
+
+    //= Champ Largeur
     m_Ui->WidthLineEdit->setValidator(m_SizeValidator);
-    connect(
+    connect( // Abonnement au changement temp réel, uniquement pour les valeurs trop hautes
         m_Ui->WidthLineEdit,
         &QLineEdit::textChanged,
         this,
         [this](const QString &text) {
-            bool ok;
-            if (const int value = text.toInt(&ok); ok && value > 720) {
+            if (const int value = text.toInt(); value > 720) {
                 m_Ui->WidthLineEdit->setText("720");}
     });
-    connect(
+    connect( // Abonnement à la confirmation, valeurs trop haute et trop basse
     m_Ui->WidthLineEdit,
     &QLineEdit::editingFinished,
     this,
     [this] {
-        if (m_Ui->WidthLineEdit->text().toInt() < 180) {
+        if (m_Ui->WidthLineEdit->text().toInt() < 180) { // Empêche les valeurs invalides
             m_Ui->WidthLineEdit->setText("180");
         }
-        emit onThumbnailsSizeSettingsChanged(
-            m_Ui->WidthLineEdit->text().toInt(),
-            m_Ui->HeightLineEdit->text().toInt());
+        const int width = m_Ui->WidthLineEdit->text().toInt(); // Largeur
+        const int height = m_Ui->HeightLineEdit->text().toInt(); // Hauteur
+        emit onThumbnailsSizeSettingsChanged(width, height); // Signale le changement de taille
+        ConfigManager::Instance().saveThumnailsSize(width, height); // Sauvegarde
     });
+    //
 
-    //= Faire du champ 'Hauteur' uniquement un champ Int avec comme maximum 720
+    //= Champ Hauteur
     m_Ui->HeightLineEdit->setValidator(m_SizeValidator);
-    connect(
+    connect( // Abonnement au changement temp réel, uniquement pour les valeurs trop hautes
         m_Ui->HeightLineEdit,
         &QLineEdit::textChanged,
         this,
@@ -48,7 +56,7 @@ MainWindow::MainWindow()
             if (const int value = text.toInt(&ok); ok && value > 720) {
                 m_Ui->HeightLineEdit->setText("720");}
     });
-    connect(
+    connect( // Abonnement à la confirmation, valeurs trop haute et trop basse
         m_Ui->HeightLineEdit,
         &QLineEdit::editingFinished,
         this,
@@ -56,11 +64,12 @@ MainWindow::MainWindow()
             if (m_Ui->HeightLineEdit->text().toInt() < 180) {
                 m_Ui->HeightLineEdit->setText("180");
             }
-            emit onThumbnailsSizeSettingsChanged(
-                m_Ui->WidthLineEdit->text().toInt(),
-                m_Ui->HeightLineEdit->text().toInt());
+            const int width = m_Ui->WidthLineEdit->text().toInt(); // Largeur
+            const int height = m_Ui->HeightLineEdit->text().toInt(); // Hauteur
+            emit onThumbnailsSizeSettingsChanged(width, height); // Signale le changement de taille
+            ConfigManager::Instance().saveThumnailsSize(width, height); // Sauvegarde
         });
-    //===
+    //=
 
     // Connecte le bouton test
     connect(

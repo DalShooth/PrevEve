@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(PrevEve LANGUAGES CXX)
+project(eve-w-preview LANGUAGES CXX)
 
 
 set(CMAKE_CXX_STANDARD 20)
@@ -20,7 +20,7 @@ include_directories(${GST_INCLUDE_DIRS})
 link_directories(${GST_LIBRARY_DIRS})
 
 qt_add_executable(
-        PrevEve
+        eve-w-preview
         src/main.cpp
         src/MainWindow.cpp
         src/MainWindow.h
@@ -34,12 +34,14 @@ qt_add_executable(
         src/KWinManager.cpp
         src/KWinManager.h
         resources.qrc
+        src/ConfigManager.cpp
+        src/ConfigManager.h
 )
 
-target_include_directories(PrevEve PRIVATE ${PIPEWIRE_INCLUDE_DIRS})
+target_include_directories(eve-w-preview PRIVATE ${PIPEWIRE_INCLUDE_DIRS})
 
 target_link_libraries(
-        PrevEve
+        eve-w-preview
         PRIVATE
         Qt6::Widgets
         Qt6::Core

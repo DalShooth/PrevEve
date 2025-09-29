@@ -2,13 +2,14 @@
 
 #include <qtimer.h>
 #include <QWindow>
-#include <QToolButton>
 #include <QStyle>
 #include <pipewire/keys.h>
 #include <spa/debug/pod.h>
 #include <spa/debug/types.h>
 #include <spa/param/format-utils.h>
 #include <spa/param/video/raw-utils.h>
+
+#include "ConfigManager.h"
 #include "KWinManager.h"
 #include "MainWindow.h"
 
@@ -25,30 +26,32 @@ Thumbnail::Thumbnail(QWidget* parent,
     m_Ui->setupUi(this); // UI deviens Ui_ThumbnailWidget
 
     // Changement de taille: Maintenant + Dynamique
-    resize(
-        mainWindow->GetUi().WidthLineEdit->text().toInt(),
-        mainWindow->GetUi().HeightLineEdit->text().toInt());
+    resize(mainWindow->GetUi().WidthLineEdit->text().toInt(), mainWindow->GetUi().HeightLineEdit->text().toInt());
     connect(
         mainWindow,
         &MainWindow::onThumbnailsSizeSettingsChanged,
         this,
         [this, mainWindow] {
-            resize(
+            resize( // Redimensionner le widget | Il est aussi possible de le faire avec un script KWin
                 mainWindow->GetUi().WidthLineEdit->text().toInt(),
                 mainWindow->GetUi().HeightLineEdit->text().toInt());
+            m_closeBtn->move(width() - m_closeBtn->width() - 5, 5); // Re-positionne le boutton close
     });
 
+    qInfo() << "App:" << StreamManager::Instance().getAppNameFromNode(StreamInfo->nodeId);
+
     setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
-    setWindowTitle(QString("Thumbnail - %1").arg(StreamInfo->nodeId));
+    setWindowTitle(QString("Thumbnail - %1").arg(StreamInfo->nodeId)); // todo -> mettre le nom de l'app à la place
     setStyleSheet("background-color: red;");
 
-    // Bouton de fermeture
+    //= Bouton de fermeture
     m_closeBtn = new QToolButton(this);
     m_closeBtn->setIcon(style()->standardIcon(QStyle::SP_TitleBarCloseButton));
     m_closeBtn->setFixedSize(20, 20);
-    m_closeBtn->move(width() - m_closeBtn->width() - 5, 5);
+    setCloseButtonPosition(); // Positionne le boutton Todo -> peut etre un moyent de l'encrée ?
     m_closeBtn->raise();  // Assure qu'il est au-dessus du QLabel
     connect(m_closeBtn, &QToolButton::clicked, this, &QWidget::close);
+    //
 
     //= PipeWire
     // Dictionnaire de propriétés PipeWire qui décrit le flux comme vidéo de capture
@@ -132,21 +135,31 @@ Thumbnail::~Thumbnail()
 }
 
 void Thumbnail::mousePressEvent(QMouseEvent *event) {
+    qInfo() << "press";
     if (event->button() == Qt::RightButton) {
         window()->windowHandle()->startSystemMove();
         event->accept();
     }
     if (event->buttons() & Qt::LeftButton) {
-        // switch
+        // todo -> switch
     }
 }
 
 void Thumbnail::showEvent(QShowEvent *event) {
+    QWidget::showEvent(event);
+
     qInfo() << "[showEvent]";
 
-    QWidget::showEvent(event);
-    QTimer::singleShot(100, this, [this] {
+    QTimer::singleShot(100, this, [this] { // Script 'Toujours au-dessus'
         KWinManager::MakeThumbnailsAlwaysOnTop(QString().number(m_StreamInfo->nodeId));
+    });
+
+    QTimer::singleShot(100, this, [this] { // Script 'SetWindowPosition'
+        const int thumbnailSavedWidth = ConfigManager::Instance().loadThumbnailPosition(windowTitle()).x();
+        const int thumbnailSavedHeight = ConfigManager::Instance().loadThumbnailPosition(windowTitle()).y();
+        if (thumbnailSavedHeight >= 0 && thumbnailSavedWidth >= 0) {
+            KWinManager::SetWindowPosition(windowTitle(), thumbnailSavedWidth, thumbnailSavedHeight);
+        }
     });
 }
 
