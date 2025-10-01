@@ -25,13 +25,13 @@ public:
     static void GetThumbnailsPositions() ;
 
 public slots:
-    void GetThumbnailsPositionsResponse(const QString &caption, const int x, const int y, const int w, const int h) {
+    void GetThumbnailsPositionsResponse(const QString &caption, const int x, const int y) {
         qInfo() << "[GetThumbnailsPositionsResponse] Caption:" << caption << "X:" << x
-            << "Y:" << y << "W:" << w << "H:" << h ;
-        emit onThumbnailPositionsReceived(caption, x, y, w, h);}
+            << "Y:" << y;
+        emit onThumbnailPositionsReceived(caption, x, y);}
 
 Q_SIGNALS:
-    void onThumbnailPositionsReceived(const QString &caption, int x, int y, int w, int h);
+    void onThumbnailPositionsReceived(const QString &caption, int x, int y);
 
 private:
     //void StopTrackingAllThumbnails();

@@ -101,13 +101,19 @@ void MainWindow::onSavePositionButtonClicked()
 {
     qInfo() << "[onSavePositionButtonClicked]";
 
+    m_Ui->SavePositionsButton->setEnabled(false);
+
     connect(
         KWinManager::Instance(),
         &KWinManager::onThumbnailPositionsReceived,
         this,
-        [](const QString &caption, int x, int y, int w, int h) {
-
+        [this](const QString &caption, int x, int y) {
+            ConfigManager::Instance()->saveThumbnailsPositions(caption, x, y);
     });
     KWinManager::Instance()->GetThumbnailsPositions();
+
+    QTimer::singleShot(3000, [this]() {
+        m_Ui->SavePositionsButton->setEnabled(true);
+    });
 }
 

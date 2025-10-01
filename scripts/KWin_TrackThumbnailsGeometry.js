@@ -9,18 +9,16 @@ for (var i = 0; i < wins.length; ++i) {
     var w = wins[i];
     if (!w || !w.caption) continue;
 
-    if (w.caption.indexOf("Thumbnail - ") === 0) { // startsWith
+    if (w.caption.indexOf("Thumbnail-") === 0) { // startsWith
         var g  = w.frameGeometry || w.geometry || w;  // <<< il faut remettre cette ligne
         var x  = Math.floor(g.x);
         var y  = Math.floor(g.y);
-        var ww = Math.floor(g.width);
-        var hh = Math.floor(g.height);
 
         callDBus(SERVICE, PATH, IFACE, "GetThumbnailsPositionsResponse",
-            w.caption, x, y, ww, hh);
+            w.caption, x, y);
     }
 }
 
 // test supplémentaire
 // callDBus(SERVICE, PATH, IFACE, "GetThumbnailsPositionsResponse",
-//     "[CACA]", 0, 0, 0, 0);
+//     "[CACA]", 0, 0);

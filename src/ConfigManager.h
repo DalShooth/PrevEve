@@ -22,7 +22,7 @@ public:
     void saveThumnailsSize(int width, int height) const;
     QSize loadThumbnailsSize() const;
     QPoint loadThumbnailPosition(const QString &caption) const;
-    void saveThumbnailsPositions() const;
+    void saveThumbnailsPositions(const QString &caption, int x, int y) const;
 
 private:
     explicit ConfigManager(); // Constructor

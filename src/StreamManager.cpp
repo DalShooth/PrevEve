@@ -72,11 +72,7 @@ StreamManager::StreamManager()
                  * temporairement c'est l'id de stream qui est utiliser */
                 preview->show();
             }
-            QTimer::singleShot( // Script 'Toujours au-dessus'
-                100,
-                this,
-                [] { KWinManager::MakeThumbnailsKeepAbove(); }
-            );
+            KWinManager::MakeThumbnailsKeepAbove();
         }
     );
 }
@@ -337,6 +333,16 @@ void StreamManager::onStartScreensSharingRequestResponse(const uint code, const 
         }
         setScreenCastState(ScreenCastState::Idle);
         return;
+    }
+
+    QVariantList streams = results.value("streams").toList();
+    for (const QVariant &s : streams) {
+        QVariantMap stream = s.toMap();
+        int nodeId = stream.value("node_id").toInt();
+        QString appId = stream.value("app_id").toString();
+        QString title = stream.value("title").toString();
+
+        qInfo() << "===========Nouvelle sélection:" << nodeId << appId << title;
     }
 
     m_PortalStreamInfoList = qdbus_cast<QList<PortalStreamInfo>>(results.value("streams")); // Les stream de la selection

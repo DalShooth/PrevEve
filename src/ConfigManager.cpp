@@ -22,7 +22,7 @@ void ConfigManager::saveThumnailsSize(const int width, const int height) const {
 }
 
 QSize ConfigManager::loadThumbnailsSize() const {
-    qInfo() << "[loadThumbnailsSize]";
+    qInfo() << "loadThumbnailsSize()";
 
     const QSettings settings(QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf",
         QSettings::IniFormat);
@@ -30,39 +30,39 @@ QSize ConfigManager::loadThumbnailsSize() const {
     const int width  = settings.value("ThumbnailWidth", 320).toInt();
     const int height = settings.value("ThumbnailHeight", 180).toInt();
 
+    qInfo() << "Thumbnails Size loaded -> w:" << width << "h:" << height;
+
     return QSize(width, height);
 }
 
 QPoint ConfigManager::loadThumbnailPosition(const QString &caption) const {
-    qInfo() << "[loadThumbnailPosition]";
+    qInfo() << "loadThumbnailPosition()";
 
-    QSettings settings(
-        QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf",
-        QSettings::IniFormat
-    );
+    QSettings settings(QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf",
+                       QSettings::IniFormat);
 
     settings.beginGroup("ThumbnailsPositions");
-    const QString value = settings.value(caption).toString(); // valeur de la clé
+    QPoint pos = settings.value(caption, QPoint(0, 0)).toPoint();
     settings.endGroup();
 
-    if (value.isEmpty()) // valeur par défaut si pas trouvé
-        return QPoint(-1, -1);
+    qInfo() << "Thumbnails Position loaded -> " << pos;
 
-    const QStringList parts = value.split(",");
-    if (parts.size() != 2)
-        return QPoint(-1, -1);
-
-    bool ok1 = false, ok2 = false;
-    int x = parts[0].toInt(&ok1);
-    int y = parts[1].toInt(&ok2);
-
-    if (ok1 && ok2)
-        return QPoint(x, y);
-
-    return QPoint(-1, -1); // fallback si parsing échoue
+    return pos;
 }
 
-void ConfigManager::saveThumbnailsPositions() const
-{
+
+void ConfigManager::saveThumbnailsPositions(const QString &caption, const int x, const int y) const {
     qInfo() << "[saveThumbnailsPositions]";
+
+    QSettings settings(QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf",
+                       QSettings::IniFormat);
+
+    settings.beginGroup("ThumbnailsPositions");
+
+    // Sauvegarde QPoint directement
+    settings.setValue(caption, QPoint(x, y));
+
+    settings.endGroup();
+    settings.sync();
 }
+

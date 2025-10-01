@@ -1,10 +1,30 @@
-const wins = workspace.stackingOrder;
+function applyKeepAbove() {
+    const wins = workspace.stackingOrder;
+    var allOk = true;
 
-for (var i = 0; i < wins.length; ++i) {
-    var w = wins[i];
-    if (!w || !w.caption) continue;
+    for (var i = 0; i < wins.length; ++i) {
+        var w = wins[i];
+        if (!w || !w.caption) continue;
 
-    if (w.caption.indexOf("Thumbnail - ") === 0) { // startsWith
-        w.keepAbove = true;
+        if (w.caption.indexOf("Thumbnail-") === 0) {
+            if (!w.keepAbove) {
+                w.keepAbove = true;
+                allOk = false; // au moins une n’était pas encore en keepAbove
+            }
+        }
+    }
+
+    // Tant qu'il reste des fenêtres non fixées, on relance le timer
+    if (!allOk) {
+        var t = new QTimer();
+        t.singleShot = true;
+        t.timeout.connect(applyKeepAbove);
+        t.start(50); // réessaie dans 300ms
     }
 }
+
+// premier déclenchement après 3s
+var startTimer = new QTimer();
+startTimer.singleShot = true;
+startTimer.timeout.connect(applyKeepAbove);
+startTimer.start(500);

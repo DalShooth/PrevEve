@@ -45,7 +45,7 @@ Thumbnail::Thumbnail(QWidget* parent, pw_core* PipeWireCore, PortalStreamInfo* S
 
     setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
     qInfo() << "id : " << m_thumbnailId;
-    setWindowTitle(QString("Thumbnail - %1").arg(ThumbnailId)); // todo -> mettre le nom de l'app à la place
+    setWindowTitle(QString("Thumbnail-%1").arg(ThumbnailId)); // todo -> mettre le nom de l'app à la place
     setStyleSheet("background-color: red;");
 
     //= Bouton de fermeture
@@ -154,10 +154,9 @@ void Thumbnail::showEvent(QShowEvent* event) {
     qInfo() << "[showEvent]";
 
     QTimer::singleShot(100, this, [this] { // Script 'SetWindowPosition'
-        const int thumbnailSavedWidth = ConfigManager::Instance()->loadThumbnailPosition(windowTitle()).x();
-        const int thumbnailSavedHeight = ConfigManager::Instance()->loadThumbnailPosition(windowTitle()).y();
-        if (thumbnailSavedHeight >= 0 && thumbnailSavedWidth >= 0) {
-            KWinManager::SetWindowPosition(windowTitle(), thumbnailSavedWidth, thumbnailSavedHeight);
+        QPoint thumbnailSavedPosition = ConfigManager::Instance()->loadThumbnailPosition(windowTitle());
+        if (thumbnailSavedPosition.x() >= 0 && thumbnailSavedPosition.y() >= 0) {
+            KWinManager::SetWindowPosition(windowTitle(), thumbnailSavedPosition.x(), thumbnailSavedPosition.y());
         }
     });
 }
