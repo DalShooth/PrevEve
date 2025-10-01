@@ -2,6 +2,8 @@
     <qresource>
         <file>scripts/KWin_KeepAbove.js</file>
         <file>scripts/KWin_SetPosition.js</file>
+        <file>scripts/KWin_TrackThumbnailsGeometry.js</file>
+        <file>scripts/KWin_PingTest.js</file>
         <file>assets/EveWPreview.png</file>
         <file>scripts/eve-w-preview.desktop</file>
     </qresource>

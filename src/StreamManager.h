@@ -33,6 +33,9 @@ public:
         static StreamManager Instance;
         return Instance;
     }
+    // Empêche la copie
+    StreamManager(const StreamManager&) = delete;
+    StreamManager& operator=(const StreamManager&) = delete;
     //=
 
     ScreenCastState getScreenCastState() const { return m_StreamState; } // StateMachine
@@ -41,8 +44,6 @@ public:
     void SetMainWindow(MainWindow* InMainWindow) {
         m_MainWindow = InMainWindow;
     }
-
-    QString getAppNameFromNode(uint32_t nodeId) const;
 
     void SetupPreviews(); /* enclenche la sequence de création de
         la session PipeWire -> commence le stream des applications séléctionnées -> crée les Thumbnails */
@@ -61,11 +62,6 @@ private:
     explicit StreamManager(); // Constructor
     ~StreamManager() override; // De-Constructor
 
-    //= Singleton - Empêche la copie
-    StreamManager(const StreamManager&) = delete;
-    StreamManager& operator=(const StreamManager&) = delete;
-    //=
-
     MainWindow* m_MainWindow = nullptr; // Ref Fenetre principal
 
     //= State Machine Linéaire
@@ -79,18 +75,10 @@ private:
     void StartScreensSharingRequest(); // Requête de démarrage (open the pop-up)
     void OpenPipeWireConnexionRequest(); // Requête de création de la connexion PipeWire
 
-    static void registry_event_global(void *data,
-                                  uint32_t id,
-                                  uint32_t permissions,
-                                  const char *type,
-                                  uint32_t version,
-                                  const struct spa_dict *props);
-
     QDBusInterface* m_QtDBusScreenCastInterface; // Interface D-Bus pour ScreenCast
-    //pw_properties *m_PipeWireProperties; // Propriétés PipeWire
 
     QDBusObjectPath m_DBusSessionHandle; // Session D-Bus
-    int m_PipeWireFileDescriptor; // Canal de communication vers le serveur PipeWire
+    int m_PipeWireFileDescriptor = -1; // Canal de communication vers le serveur PipeWire
     QList<PortalStreamInfo> m_PortalStreamInfoList; // Liste des streams sélectionnés
 
     pw_loop* m_PipeWireLoop; // Boucle d’événements PipeWire

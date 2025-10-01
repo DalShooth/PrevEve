@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ui_MainWindow.h"
-#include "StreamManager.h"
 
 class QIntValidator;
 
@@ -17,6 +16,8 @@ public:
     void onThumbnailsSizeSettingsChanged(int Width, int Height);
 
 private:
+    void onSavePositionButtonClicked();
+
     Ui_MainWindow* m_Ui;   // objet direct
     QIntValidator* m_SizeValidator;
 };

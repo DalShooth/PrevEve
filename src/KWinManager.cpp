@@ -2,28 +2,41 @@
 
 #include <qdbusreply.h>
 #include <qdir.h>
-#include <QFile>
 #include <qproperty.h>
-#include <QTemporaryFile>
 
 
-void KWinManager::MakeThumbnailsAlwaysOnTop(const QString &CharacterName)
+KWinManager::KWinManager(QObject *parent) : QObject(parent)
 {
-    qInfo() << "[MakeThumbnailsAlwaysOnTop]";
+    qInfo() << "CONSTRUCTOR [KWinManager]";
+
+    QDBusConnection bus = QDBusConnection::sessionBus();
+    if (!bus.registerService("org.example.EveWPreview")) {
+        qWarning() << "[DBus] registerService FAILED:"
+                   << bus.lastError().name() << bus.lastError().message();
+    }
+    if (!bus.registerObject("/EveWPreview", this, QDBusConnection::ExportAllSlots)) {
+        qWarning() << "[DBus] registerObject FAILED:"
+                   << bus.lastError().name() << bus.lastError().message();
+    }
+}
+
+void KWinManager::MakeThumbnailsKeepAbove()
+{
+    qInfo() << "[MakeThumbnailsKeepAbove]";
 
     QFile file(":/scripts/KWin_KeepAbove.js");
     if (!file.open(QIODevice::ReadOnly)) {
-        qCritical() << "[MakeThumbnailsAlwaysOnTop] -> Impossible d’ouvrir le script embarqué";
+        qCritical() << "[MakeThumbnailsKeepAbove] -> Impossible d’ouvrir le script embarqué";
         return;
     }
-    const QString script = QString::fromUtf8(file.readAll()).arg(CharacterName);
+    const QString script = QString::fromUtf8(file.readAll());
     //qInfo() << script.toUtf8().constData(); // <- DEBUG for print script
     file.close();
 
-    QTemporaryFile temporaryFile(QDir::tempPath() + "/kwin_script_XXXXXX.js");
+    QTemporaryFile temporaryFile(QDir::tempPath() + "/EveWPreview_XXXXXX.js");
     temporaryFile.setAutoRemove(true);
     if (!temporaryFile.open()) {
-        qCritical() << "[MakeThumbnailsAlwaysOnTop] -> Cannot open temporaryFile";
+        qCritical() << "[MakeThumbnailsKeepAbove] -> Cannot open temporaryFile";
         return;
     }
     temporaryFile.write(script.toUtf8());
@@ -36,20 +49,20 @@ void KWinManager::MakeThumbnailsAlwaysOnTop(const QString &CharacterName)
         "org.kde.kwin.Scripting",
         QDBusConnection::sessionBus());
     if (!DBusInterface.isValid()) {
-        qCritical() << "[MakeThumbnailsAlwaysOnTop] -> DBusInterface invalid";
+        qCritical() << "[MakeThumbnailsKeepAbove] -> DBusInterface invalid";
         return;
     }
 
     QDBusReply<int> reply = DBusInterface.call("loadScript", temporaryFile.fileName());
     if (!reply.isValid()) {
-        qCritical() << "[MakeThumbnailsAlwaysOnTop] -> Erreur loadScript:" << reply.error().message();
+        qCritical() << "[MakeThumbnailsKeepAbove] -> Erreur loadScript:" << reply.error().message();
         return;
     }
 
     int scriptId = reply.value();
     QString scriptPath = "/Scripting/Script" + QString::number(scriptId);
 
-    qInfo() << "[MakeThumbnailsAlwaysOnTop] -> Script loaded, scriptId:" << scriptId << " | path:" << scriptPath;
+    qInfo() << "[MakeThumbnailsKeepAbove] -> Script loaded, scriptId:" << scriptId << " | path:" << scriptPath;
 
     // Interface vers le script
     QDBusInterface DBusScriptInterface(
@@ -60,19 +73,19 @@ void KWinManager::MakeThumbnailsAlwaysOnTop(const QString &CharacterName)
     );
 
     if (!DBusScriptInterface.isValid()) {
-        qCritical() << "[MakeThumbnailsAlwaysOnTop] -> Unable to create DBusScriptInterface";
+        qCritical() << "[MakeThumbnailsKeepAbove] -> Unable to create DBusScriptInterface";
         return;
     }
 
     // Lancer le script
     QDBusReply<void> runReply = DBusScriptInterface.call("run");
     if (!runReply.isValid()) {
-        qCritical() << "[MakeThumbnailsAlwaysOnTop] -> Error run:" << runReply.error().message();
+        qCritical() << "[MakeThumbnailsKeepAbove] -> Error run:" << runReply.error().message();
         return;
     }
 
 
-    qInfo() << "[MakeThumbnailsAlwaysOnTop] -> Script used for Thumbnail:" << CharacterName;
+    qInfo() << "[MakeThumbnailsKeepAbove] -> Script used";
 }
 
 void KWinManager::SetWindowPosition(const QString &Caption, const int X, const int Y)
@@ -88,7 +101,7 @@ void KWinManager::SetWindowPosition(const QString &Caption, const int X, const i
     //qInfo() << script.toUtf8().constData(); // <- DEBUG for print script
     file.close();
 
-    QTemporaryFile temporaryFile(QDir::tempPath() + "/kwin_script_XXXXXX.js");
+    QTemporaryFile temporaryFile(QDir::tempPath() + "/EveWPreview_XXXXXX.js");
     temporaryFile.setAutoRemove(true);
     if (!temporaryFile.open()) {
         qCritical() << "[SetWindowPosition] -> Cannot open temporaryFile";
@@ -142,3 +155,91 @@ void KWinManager::SetWindowPosition(const QString &Caption, const int X, const i
 
     qInfo() << "[SetWindowPosition] -> Script used for Thumbnail:" << Caption;
 }
+
+void KWinManager::GetThumbnailsPositions() {
+    qInfo() << "[GetThumbnailsPositions]";
+
+    QTemporaryFile script(QDir::tempPath() + "/EveWPreview_XXXXXX.js");
+    script.setAutoRemove(true);
+    if (!script.open()) {
+        qCritical() << "[GetThumbnailsPositions] -> Cannot open temporaryFile";
+        return;
+    }
+
+    QFile file(":/scripts/KWin_TrackThumbnailsGeometry.js");
+    if (!file.open(QIODevice::ReadOnly)) {
+        qCritical() << "[GetThumbnailsPositions] -> Impossible d’ouvrir le script embarqué";
+        return;
+    }
+    const QString scriptRaw = QString::fromUtf8(file.readAll());
+    //qInfo() << script.toUtf8().constData(); // <- DEBUG for print script
+    script.write(scriptRaw.toUtf8());
+    script.flush();
+    script.close();
+
+    // Interface pour load le script
+    QDBusInterface scriptingInterface(
+        "org.kde.KWin",
+        "/Scripting",
+        "org.kde.kwin.Scripting",
+        QDBusConnection::sessionBus());
+    if (!scriptingInterface.isValid()) {
+        qCritical() << "[GetThumbnailsPositions] -> DBusInterface invalid";
+        return;
+    }
+
+    // chargé le script via scriptingInterface
+    QDBusReply<int> reply = scriptingInterface.call("loadScript", script.fileName());
+    if (!reply.isValid()) {
+        qCritical() << "[GetThumbnailsPositions] -> Erreur loadScript:" << reply.error().message();
+        return;
+    }
+
+    const int scriptId = reply.value(); // Id du script
+    const QString scriptPath = "/Scripting/Script" + QString::number(scriptId); // Path du script
+
+    qInfo() << "[GetThumbnailsPositions] -> Script loaded, scriptId:" << scriptId << " | path:" << scriptPath;
+
+    // Interface vers le script chargé
+    QDBusInterface DBusScriptInterface(
+        "org.kde.KWin",
+        scriptPath,
+        "org.kde.kwin.Script",
+        QDBusConnection::sessionBus()
+    );
+
+    // Lancer le script
+    if (QDBusReply<void> runReply = DBusScriptInterface.call("run"); !runReply.isValid()) {
+        qCritical() << "[GetThumbnailsPositions] -> Error run:" << runReply.error().message();
+        return;
+    }
+
+    qInfo() << "[GetThumbnailsPositions] -> Script used";
+}
+
+// void KWinManager::StopTrackingAllThumbnails()
+// {
+//     qInfo() << "[StopTrackingAllThumbnails]";
+//
+//     // Interface pour unload le script
+//     QDBusInterface scriptingInterface(
+//         "org.kde.KWin",
+//         "/Scripting",
+//         "org.kde.kwin.Scripting",
+//         QDBusConnection::sessionBus());
+//     if (!scriptingInterface.isValid()) {
+//         qCritical() << "[StopTrackingAllThumbnails] -> DBusInterface invalid";
+//         return;
+//     }
+//
+//     QDBusReply<bool> reply = scriptingInterface.call("unloadScript", "EveWPreviewTracker");
+//     if (!reply.isValid()) {
+//         qCritical() << "[StopTrackingAllThumbnails] -> Erreur unloadScript:" << reply.error().message();
+//     } else if (!reply.value()) {
+//         qWarning() << "[StopTrackingAllThumbnails] -> unloadScript a échoué (false)";
+//     } else {
+//         qInfo() << "[StopTrackingAllThumbnails] -> Script EveWPreviewTracker bien déchargé";
+//     }
+// }
+
+

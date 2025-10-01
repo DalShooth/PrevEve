@@ -4,6 +4,8 @@
 #include <qpoint.h>
 #include <QSettings>
 
+#include "KWinManager.h"
+
 ConfigManager::ConfigManager()
 {
     qInfo() << "CONSTRUCTOR [ConfigManager]";
@@ -60,3 +62,7 @@ QPoint ConfigManager::loadThumbnailPosition(const QString &caption) const {
     return QPoint(-1, -1); // fallback si parsing échoue
 }
 
+void ConfigManager::saveThumbnailsPositions() const
+{
+    qInfo() << "[saveThumbnailsPositions]";
+}

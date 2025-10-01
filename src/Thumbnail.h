@@ -16,7 +16,8 @@ class Thumbnail final : public QWidget
 public:
     explicit Thumbnail(QWidget* parent,
         pw_core* PipeWireCore,
-        PortalStreamInfo* StreamInfo); // Constructor
+        PortalStreamInfo* StreamInfo,
+        int ThumbnailId); // Constructor
 
     signals:
     void onVideoFrameAvailable(const QImage &image);
@@ -29,6 +30,7 @@ protected:
     void showEvent(QShowEvent* event) override;
 
 private:
+    //= Événement PipeWire
     void handleStreamStateChanged(pw_stream_state oldState,pw_stream_state newState, const char* error);
     static void onStreamStateChanged(
         void* data,
@@ -81,14 +83,17 @@ private:
         auto* self = static_cast<Thumbnail*>(data);
         self->handleStreamProcess();
     }
+    //=
 
-    const char *streamStateToStr(pw_stream_state state) const;
+    const char *streamStateToStr(pw_stream_state state) const; // Outil pour log
 
+    // Re-positionne le bouton de fermeture après le redimentionnement du widget
     void setCloseButtonPosition() const { m_closeBtn->move(width() - m_closeBtn->width() - 5, 5); }
 
-    Ui_ThumbnailWidget* m_Ui;
-    QToolButton* m_closeBtn;
+    Ui_ThumbnailWidget* m_Ui; // Ui Qt (.ui)
+    QToolButton* m_closeBtn; // Bouton de fermeture
 
+    int m_thumbnailId;
     pw_core* m_PipeWireCore; // Core PipeWire
     pw_properties* m_PipeWireProperties; // Propriétés PipeWire
     pw_stream* m_PipeWireStream; // Stream PipeWire

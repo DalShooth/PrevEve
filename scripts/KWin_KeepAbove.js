@@ -1,8 +1,10 @@
 const wins = workspace.stackingOrder;
-const target = "Thumbnail - %1";
+
 for (var i = 0; i < wins.length; ++i) {
     var w = wins[i];
-    if (w.caption === target) {
+    if (!w || !w.caption) continue;
+
+    if (w.caption.indexOf("Thumbnail - ") === 0) { // startsWith
         w.keepAbove = true;
     }
 }

@@ -1,8 +1,11 @@
 #include "MainWindow.h"
 
+#include <qevent.h>
+#include <qtimer.h>
 #include <QValidator>
-
 #include "ConfigManager.h"
+#include "KWinManager.h"
+#include "StreamManager.h"
 
 MainWindow::MainWindow()
 {
@@ -14,7 +17,7 @@ MainWindow::MainWindow()
     setFixedSize(400, 200); // Fixe la taille de la fenetre
 
     // Charger la taille depuis .conf
-    const QSize loadedThumbnailsSize = ConfigManager::Instance().loadThumbnailsSize();
+    const QSize loadedThumbnailsSize = ConfigManager::Instance()->loadThumbnailsSize();
     m_Ui->WidthLineEdit->setText(QString::number(loadedThumbnailsSize.width()));
     m_Ui->HeightLineEdit->setText(QString::number(loadedThumbnailsSize.height()));
 
@@ -41,7 +44,7 @@ MainWindow::MainWindow()
         const int width = m_Ui->WidthLineEdit->text().toInt(); // Largeur
         const int height = m_Ui->HeightLineEdit->text().toInt(); // Hauteur
         emit onThumbnailsSizeSettingsChanged(width, height); // Signale le changement de taille
-        ConfigManager::Instance().saveThumnailsSize(width, height); // Sauvegarde
+        ConfigManager::Instance()->saveThumnailsSize(width, height); // Sauvegarde
     });
     //
 
@@ -67,11 +70,11 @@ MainWindow::MainWindow()
             const int width = m_Ui->WidthLineEdit->text().toInt(); // Largeur
             const int height = m_Ui->HeightLineEdit->text().toInt(); // Hauteur
             emit onThumbnailsSizeSettingsChanged(width, height); // Signale le changement de taille
-            ConfigManager::Instance().saveThumnailsSize(width, height); // Sauvegarde
+            ConfigManager::Instance()->saveThumnailsSize(width, height); // Sauvegarde
         });
     //=
 
-    // Connecte le bouton test
+    // Connecte le bouton de création des previews
     connect(
         m_Ui->SetupPreviewsButton,
         &QPushButton::clicked,
@@ -84,4 +87,27 @@ MainWindow::MainWindow()
                 StreamManager::Instance().ClosePreviews();
             }
     });
+
+    // Connecte de bouton de sauvegarde des positions des thumbnails
+    connect(
+        m_Ui->SavePositionsButton,
+        &QPushButton::clicked,
+        this,
+        &MainWindow::onSavePositionButtonClicked
+    );
 }
+
+void MainWindow::onSavePositionButtonClicked()
+{
+    qInfo() << "[onSavePositionButtonClicked]";
+
+    connect(
+        KWinManager::Instance(),
+        &KWinManager::onThumbnailPositionsReceived,
+        this,
+        [](const QString &caption, int x, int y, int w, int h) {
+
+    });
+    KWinManager::Instance()->GetThumbnailsPositions();
+}
+

@@ -3,11 +3,14 @@
 #include <qdbusunixfiledescriptor.h>
 #include <QDebug>
 #include <QSocketNotifier>
+#include <qtimer.h>
+
 #include "PortalStreamInfo.h"
 #include <pipewire/pipewire.h>
 #include <spa/debug/types.h>
 #include <spa/debug/pod.h>
 
+#include "KWinManager.h"
 #include "MainWindow.h"
 #include "Thumbnail.h"
 
@@ -63,10 +66,19 @@ StreamManager::StreamManager()
             qInfo() << "[onStreamsReady]";
             // Boucle sur les streams
             for (int i = 0; i < m_PortalStreamInfoList.length(); ++i) {
-                Thumbnail* preview = new Thumbnail(m_MainWindow, m_PipeWireCore, &m_PortalStreamInfoList[i]);
+                Thumbnail* preview = new Thumbnail(m_MainWindow, m_PipeWireCore, &m_PortalStreamInfoList[i], i);
                 m_ThumbnailsList.append(preview);
+                /* todo -> trouver un moyent d'avoir le titre de la fenetre
+                 * temporairement c'est l'id de stream qui est utiliser */
                 preview->show();
-            }});
+            }
+            QTimer::singleShot( // Script 'Toujours au-dessus'
+                100,
+                this,
+                [] { KWinManager::MakeThumbnailsKeepAbove(); }
+            );
+        }
+    );
 }
 
 StreamManager::~StreamManager()
@@ -82,6 +94,7 @@ void StreamManager::onChangeScreenCastState() // Linear State Machine
             qInfo() << "[onChangeScreenCastState] -> Idle";
             m_MainWindow->GetUi().SetupPreviewsButton->setText("Setup\nPreviews");
             m_MainWindow->GetUi().SetupPreviewsButton->setEnabled(true);
+            m_MainWindow->GetUi().SavePositionsButton->setEnabled(false);
             break;
         case ScreenCastState::CreatingSession: // Cosmetique
             qInfo() << "[onChangeScreenCastState] -> CreatingSession...";
@@ -118,6 +131,7 @@ void StreamManager::onChangeScreenCastState() // Linear State Machine
             emit onStreamsReady(); // Signalé la préparation des streams
             m_MainWindow->GetUi().SetupPreviewsButton->setEnabled(true);
             m_MainWindow->GetUi().SetupPreviewsButton->setText("Remove\nPreview");
+            m_MainWindow->GetUi().SavePositionsButton->setEnabled(true);
             break;
         default:
             break;
@@ -448,50 +462,4 @@ void StreamManager::ClosePreviews()
     // }
 
     setScreenCastState(ScreenCastState::Idle);
-}
-
-QString StreamManager::getAppNameFromNode(uint32_t nodeId) const
-{
-    QString appName;
-
-    pw_registry *registry = pw_core_get_registry(m_PipeWireCore, PW_VERSION_REGISTRY, 0);
-
-    spa_hook registryListener;
-    std::pair<uint32_t, QString*> target(nodeId, &appName);
-
-    static const pw_registry_events registryEvents = {
-        PW_VERSION_REGISTRY_EVENTS,
-        registry_event_global, // global
-        nullptr                // global_remove
-    };
-
-
-    pw_registry_add_listener(registry, &registryListener, &registryEvents, &target);
-
-    // itérer quelques fois la boucle PipeWire pour laisser venir les events
-    for (int i = 0; i < 20; i++) {
-        pw_loop_iterate(m_PipeWireLoop, 0); // utilise ton loop déjà existant
-    }
-
-    spa_hook_remove(&registryListener);
-    pw_proxy_destroy(reinterpret_cast<pw_proxy*>(registry));
-
-    return appName;
-}
-
-void StreamManager::registry_event_global(void *data, uint32_t id, uint32_t permissions, const char *type,
-    uint32_t version, const struct spa_dict *props)
-{
-    auto *target = static_cast<std::pair<uint32_t, QString*>*>(data);
-
-    if (std::string(type) == PW_TYPE_INTERFACE_Node && id == target->first) {
-        if (props) {
-            const spa_dict_item *item;
-            spa_dict_for_each(item, props) {
-                if (std::string(item->key) == "application.name") {
-                    *(target->second) = QString::fromUtf8(item->value);
-                }
-            }
-        }
-    }
 }

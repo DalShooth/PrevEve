@@ -45,16 +45,22 @@
         </property>
         <item>
          <widget class="QPushButton" name="SetupPreviewsButton">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
-            <height>70</height>
+            <height>50</height>
            </size>
           </property>
           <property name="font">
            <font>
             <pointsize>12</pointsize>
            </font>
+          </property>
+          <property name="focusPolicy">
+           <enum>Qt::NoFocus</enum>
           </property>
           <property name="text">
            <string>Setup
@@ -65,6 +71,16 @@ Previews</string>
             <width>16</width>
             <height>16</height>
            </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="SavePositionsButton">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Save Positions</string>
           </property>
          </widget>
         </item>
@@ -98,6 +114,9 @@ Wanek</string>
        <layout class="QGridLayout" name="gridLayout_2">
         <item row="0" column="1">
          <widget class="QLineEdit" name="WidthLineEdit">
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
+          </property>
           <property name="toolTip">
            <string>&lt;= 720
 &gt;=180</string>
@@ -109,6 +128,9 @@ Wanek</string>
         </item>
         <item row="2" column="0" colspan="5">
          <widget class="QCheckBox" name="checkBox">
+          <property name="focusPolicy">
+           <enum>Qt::NoFocus</enum>
+          </property>
           <property name="text">
            <string>CheckBox (Unused)</string>
           </property>
@@ -154,6 +176,9 @@ Wanek</string>
         </item>
         <item row="3" column="0" colspan="5">
          <widget class="QCheckBox" name="checkBox_2">
+          <property name="focusPolicy">
+           <enum>Qt::NoFocus</enum>
+          </property>
           <property name="text">
            <string>CheckBox (Unused)</string>
           </property>
@@ -161,6 +186,9 @@ Wanek</string>
         </item>
         <item row="0" column="3">
          <widget class="QLineEdit" name="HeightLineEdit">
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
+          </property>
           <property name="toolTip">
            <string>&lt;= 720
 &gt;=180</string>

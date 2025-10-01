@@ -8,6 +8,7 @@
 #include <QtDBus/qdbusmetatype.h>
 
 #include "ConfigManager.h"
+#include "KWinManager.h"
 #include "PortalStreamInfo.h"
 #include "StreamManager.h"
 
@@ -94,8 +95,9 @@ int main(int argc, char *argv[])
     qDBusRegisterMetaType<QList<PortalStreamInfo>>();
     //=
 
-    // ConfigManager (singleton premier appel)
+    // Init Singleton
     ConfigManager::Instance();
+    KWinManager::Instance();
 
     MainWindow MainWindow; // Crée la fenêtre principale
     StreamManager::Instance().SetMainWindow(&MainWindow); // Crée StreamManager et Set sa ref à MainWindow (Singleton)

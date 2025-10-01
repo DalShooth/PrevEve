@@ -13,9 +13,11 @@
 #include "KWinManager.h"
 #include "MainWindow.h"
 
-Thumbnail::Thumbnail(QWidget* parent,
-                     pw_core* PipeWireCore,
-                     PortalStreamInfo* StreamInfo) : QWidget(parent), m_PipeWireCore(PipeWireCore), m_StreamInfo(StreamInfo)
+Thumbnail::Thumbnail(QWidget* parent, pw_core* PipeWireCore, PortalStreamInfo* StreamInfo, const int ThumbnailId) :
+    QWidget(parent),
+    m_thumbnailId(ThumbnailId),
+    m_PipeWireCore(PipeWireCore),
+    m_StreamInfo(StreamInfo)
 {
     qInfo() << "CONSTRUCTOR [Thumbnail]";
 
@@ -24,8 +26,9 @@ Thumbnail::Thumbnail(QWidget* parent,
     //= UI
     m_Ui = new Ui_ThumbnailWidget;
     m_Ui->setupUi(this); // UI deviens Ui_ThumbnailWidget
+    //=
 
-    // Changement de taille: Maintenant + Dynamique
+    //= Changement de taille: Maintenant + Dynamique
     resize(mainWindow->GetUi().WidthLineEdit->text().toInt(), mainWindow->GetUi().HeightLineEdit->text().toInt());
     connect(
         mainWindow,
@@ -34,14 +37,15 @@ Thumbnail::Thumbnail(QWidget* parent,
         [this, mainWindow] {
             resize( // Redimensionner le widget | Il est aussi possible de le faire avec un script KWin
                 mainWindow->GetUi().WidthLineEdit->text().toInt(),
-                mainWindow->GetUi().HeightLineEdit->text().toInt());
+                mainWindow->GetUi().HeightLineEdit->text().toInt()
+            );
             m_closeBtn->move(width() - m_closeBtn->width() - 5, 5); // Re-positionne le boutton close
     });
-
-    qInfo() << "App:" << StreamManager::Instance().getAppNameFromNode(StreamInfo->nodeId);
+    //=
 
     setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
-    setWindowTitle(QString("Thumbnail - %1").arg(StreamInfo->nodeId)); // todo -> mettre le nom de l'app à la place
+    qInfo() << "id : " << m_thumbnailId;
+    setWindowTitle(QString("Thumbnail - %1").arg(ThumbnailId)); // todo -> mettre le nom de l'app à la place
     setStyleSheet("background-color: red;");
 
     //= Bouton de fermeture
@@ -51,7 +55,7 @@ Thumbnail::Thumbnail(QWidget* parent,
     setCloseButtonPosition(); // Positionne le boutton Todo -> peut etre un moyent de l'encrée ?
     m_closeBtn->raise();  // Assure qu'il est au-dessus du QLabel
     connect(m_closeBtn, &QToolButton::clicked, this, &QWidget::close);
-    //
+    //=
 
     //= PipeWire
     // Dictionnaire de propriétés PipeWire qui décrit le flux comme vidéo de capture
@@ -115,9 +119,8 @@ Thumbnail::Thumbnail(QWidget* parent,
         return;
     }
     qInfo() << "[CONSTRUCTOR [Thumbnail]] ->  PipeWireStream created";
-    //=
 
-    //= S'abonné au rendu PipeWire (mise à jour frame par frame)
+    // S'abonné au rendu PipeWire (mise à jour frame par frame)
     connect(
         this,
         &Thumbnail::onVideoFrameAvailable,
@@ -125,7 +128,7 @@ Thumbnail::Thumbnail(QWidget* parent,
         [this](const QImage& image) {
             m_Ui->PreviewLabel->setPixmap(QPixmap::fromImage(image));
     });
-    //
+    //=
 }
 
 Thumbnail::~Thumbnail()
@@ -135,7 +138,7 @@ Thumbnail::~Thumbnail()
 }
 
 void Thumbnail::mousePressEvent(QMouseEvent *event) {
-    qInfo() << "press";
+    //qInfo() << "[mousePressEvent]";
     if (event->button() == Qt::RightButton) {
         window()->windowHandle()->startSystemMove();
         event->accept();
@@ -145,18 +148,14 @@ void Thumbnail::mousePressEvent(QMouseEvent *event) {
     }
 }
 
-void Thumbnail::showEvent(QShowEvent *event) {
+void Thumbnail::showEvent(QShowEvent* event) {
     QWidget::showEvent(event);
 
     qInfo() << "[showEvent]";
 
-    QTimer::singleShot(100, this, [this] { // Script 'Toujours au-dessus'
-        KWinManager::MakeThumbnailsAlwaysOnTop(QString().number(m_StreamInfo->nodeId));
-    });
-
     QTimer::singleShot(100, this, [this] { // Script 'SetWindowPosition'
-        const int thumbnailSavedWidth = ConfigManager::Instance().loadThumbnailPosition(windowTitle()).x();
-        const int thumbnailSavedHeight = ConfigManager::Instance().loadThumbnailPosition(windowTitle()).y();
+        const int thumbnailSavedWidth = ConfigManager::Instance()->loadThumbnailPosition(windowTitle()).x();
+        const int thumbnailSavedHeight = ConfigManager::Instance()->loadThumbnailPosition(windowTitle()).y();
         if (thumbnailSavedHeight >= 0 && thumbnailSavedWidth >= 0) {
             KWinManager::SetWindowPosition(windowTitle(), thumbnailSavedWidth, thumbnailSavedHeight);
         }
