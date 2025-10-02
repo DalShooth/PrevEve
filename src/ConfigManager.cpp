@@ -48,9 +48,11 @@ QPoint ConfigManager::loadThumbnailPosition(const QString &character) {
                        QSettings::IniFormat);
 
     settings.beginGroup("ThumbnailsPositions");
-    int x = settings.value(character + "/x", 0).toInt();
-    int y = settings.value(character + "/y", 0).toInt();
+    int x = settings.value(character + "\\x", 0).toInt();
+    int y = settings.value(character + "\\y", 0).toInt();
     settings.endGroup();
+
+    qInfo() << "ConfigManager::loadThumbnailPosition()" << QPoint(x, y);
 
     return QPoint(x, y);
 }

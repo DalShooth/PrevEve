@@ -5,6 +5,7 @@
 #include "Thumbnail.h"
 
 
+class QDBusInterface;
 class EveWPreviewWindow;
 class QDBusPendingCallWatcher;
 class Thumbnail;

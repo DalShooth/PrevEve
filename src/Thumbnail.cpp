@@ -55,7 +55,7 @@ Thumbnail::Thumbnail(
 
     // ComboBox de séléction de personnage
     m_characterSelectComboBox = new QComboBox(this);
-    m_characterSelectComboBox->setFixedWidth(120);
+    m_characterSelectComboBox->setFixedWidth(200);
     m_characterSelectComboBox->move(5, height() - m_characterSelectComboBox->height() - 5); // bas gauche
     m_characterSelectComboBox->addItem("");
     m_characterSelectComboBox->addItems(*characters);
@@ -144,7 +144,7 @@ void Thumbnail::onCharacterSelected(const QString& selectedCharacter) {
     if (selectedCharacter.isEmpty()) {
         return;
     }
-    qInfo() << "onCharacterSelected() :" << selectedCharacter;
+    qInfo() << "Thumbnail::onCharacterSelected() :" << selectedCharacter;
     m_character = selectedCharacter;
 
     setWindowTitle(QString("Thumbnail-%1").arg(m_character)); // Titre de la fenêtre, sert au script SetWindowPosition
@@ -152,8 +152,6 @@ void Thumbnail::onCharacterSelected(const QString& selectedCharacter) {
     // Charger la position de la thumbnial du personnage
     const QPoint thumbnailPosition = ConfigManager::loadThumbnailPosition(m_character);
     move(thumbnailPosition.x(), thumbnailPosition.y());
-
-    m_characterSelectComboBox->setVisible(false);
 }
 
 void Thumbnail::handleStreamStateChanged(

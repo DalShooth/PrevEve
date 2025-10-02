@@ -3,8 +3,8 @@
 #include "EveWPreviewWindow.h"
 
 #include <qdatetime.h>
+#include <QFile>
 #include <QStandardPaths>
-#include "ConfigManager.h"
 #include "KWinManager.h"
 #include "StreamManager.h"
 
@@ -43,22 +43,6 @@ void installDesktopFile()
     }
 }
 
-void installIcon()
-{
-    qInfo() << "installIcon()";
-
-    const QString iconDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/icons/";
-    const QString destFile = iconDir + "EveWPreview.png";
-
-    if (QFile::exists(destFile)) {
-        return;
-    }
-
-    if (QFile src(":/assets/EveWPreview.png"); !src.copy(destFile)) {
-        qWarning() << "[installIcon] Failed to copy to:" << destFile;
-    }
-}
-
 int main(int argc, char *argv[])
 {
     // Logs in file
@@ -75,13 +59,9 @@ int main(int argc, char *argv[])
     qputenv("QSG_RENDER_LOOP", "basic");
     qputenv("QT_XCB_NO_XI2", "1");
 
-    installIcon(); // Copie l'icone dans .local/share/icons
-    installDesktopFile(); // Copie le .desktop dans .local/share/applications
-
     QApplication app(argc, argv);
+    app.setWindowIcon(QIcon(":/assets/EveWPreview.png"));
 
-    // Init
-    KWinManager::Instance();
     EveWPreviewWindow* eveWPreviewWindow = new EveWPreviewWindow();
     eveWPreviewWindow->show(); // Affiche MainWindow
 

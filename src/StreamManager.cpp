@@ -1,5 +1,6 @@
 #include "StreamManager.h"
 
+#include <QDBusInterface>
 #include <QDBusPendingReply>
 #include <qdbusunixfiledescriptor.h>
 #include <QDebug>
@@ -78,7 +79,6 @@ void StreamManager::onChangeScreenCastState() // Linear State Machine
                 qInfo() << "[StreamManager::onChangeScreenCastState] -> Idle";
                 eveWPreviewWindow->m_Ui->SetupPreviewsButton->setText("Setup\nPreviews");
                 eveWPreviewWindow->m_Ui->SetupPreviewsButton->setEnabled(true);
-                eveWPreviewWindow->m_Ui->SavePositionsButton->setEnabled(false);
                 eveWPreviewWindow->m_Ui->EditCharactersList->setEnabled(true);
                 break;
             case ScreenCastState::CreatingSession: // Cosmetique
@@ -117,7 +117,6 @@ void StreamManager::onChangeScreenCastState() // Linear State Machine
                 emit onStreamsReady(); // Signalé la préparation des streams
                 eveWPreviewWindow->m_Ui->SetupPreviewsButton->setEnabled(true);
                 eveWPreviewWindow->m_Ui->SetupPreviewsButton->setText("Remove\nPreview");
-                eveWPreviewWindow->m_Ui->SavePositionsButton->setEnabled(true);
                 break;
             default:
                 break;
