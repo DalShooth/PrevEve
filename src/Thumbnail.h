@@ -19,7 +19,7 @@ public:
         pw_core* PipeWireCore,
         PortalStreamInfo* StreamInfo,
         int ThumbnailId,
-        QStringList* ThumbnailsProfiles); // Constructor
+        QStringList* characters); // Constructor
 
     signals:
     void onVideoFrameAvailable(const QImage &image);
@@ -92,10 +92,10 @@ private:
 
     Ui_ThumbnailWidget* m_Ui; // Ui Qt (.ui)
     QToolButton* m_closeBtn; // Bouton de fermeture
-    QComboBox* m_profileSelectComboBox;
+    QComboBox* m_characterSelectComboBox;
 
     int m_thumbnailId;
-    QString* m_characterSelected;
+    QString m_character;
     pw_core* m_PipeWireCore; // Core PipeWire
     pw_properties* m_PipeWireProperties; // Propriétés PipeWire
     pw_stream* m_PipeWireStream; // Stream PipeWire
@@ -108,5 +108,5 @@ private:
     uint32_t m_videoHeight; // Hauteur du rendu (!= TAILLE DE LA THUMBNAIL)
 
 private slots:
-    void onProfileSelected(const QString& selectedProfile); // Réagir à la séléction d'un profil
+    void onCharacterSelected(const QString& selectedCharacter); // Réagir à la séléction d'un personnage
 };

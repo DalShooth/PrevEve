@@ -23,9 +23,9 @@ public:
     //=
 
     static void MakeThumbnailsKeepAbove();
-    static void SetWindowPosition(const QString &profile, QPoint newPosition);
+    static void SetWindowPosition(const QString &character, QPoint newPosition);
     static void GetThumbnailsPositions();
-    static void setFocusedWindow(const QString &windowToFocused);
+    static void setFocusedClient(const QString &clientToFocused);
 
 public slots:
     // Fonction réponse à la requête GetThumbnailsPositions du script KWin

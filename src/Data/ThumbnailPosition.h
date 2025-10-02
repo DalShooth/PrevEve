@@ -4,6 +4,6 @@
 #include <QString>
 
 struct ThumbnailPosition {
-    QString profile;
+    QString character;
     QPoint position;
 };

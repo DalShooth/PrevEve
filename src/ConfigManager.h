@@ -21,12 +21,12 @@ public:
     //=
 
     QSize loadThumbnailsSize() const;
-    QStringList loadThumbnailsProfiles();
-    QPoint loadThumbnailPosition(const QString &profile) const;
+    QStringList loadCharacters();
+    QPoint loadThumbnailPosition(const QString &character) const;
 
     void saveThumnailsSize(int width, int height) const;
     void saveThumbnailsPositions(const QList<ThumbnailPosition>& thumbnailsPositions) const;
-    void saveThumbnailsProfiles(const QStringList &ThumbnailsProfiles) const;
+    void saveCharacters(const QStringList &saveCharacters) const;
 
 private:
     explicit ConfigManager(); // Constructor

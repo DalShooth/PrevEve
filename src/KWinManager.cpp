@@ -88,18 +88,18 @@ void KWinManager::MakeThumbnailsKeepAbove()
     qInfo() << "[MakeThumbnailsKeepAbove] -> Script used";
 }
 
-void KWinManager::SetWindowPosition(const QString &profile, const QPoint newPosition)
+void KWinManager::SetWindowPosition(const QString &character, const QPoint newPosition)
 {
-    qInfo() << "[SetWindowPosition]";
+    qInfo() << "SetWindowPosition()";
 
     QFile file(":/scripts/KWin_SetWindowPosition.js");
     if (!file.open(QIODevice::ReadOnly)) {
         qCritical() << "[SetWindowPosition] -> Impossible d’ouvrir le script embarqué";
         return;
     }
-    QString caption = "Thumbnail-" + profile;
+    QString caption = "Thumbnail-" + character;
     const QString script = QString::fromUtf8(file.readAll()).arg(caption).arg(newPosition.x()).arg(newPosition.y());
-    qInfo() << script.toUtf8().constData(); // <- DEBUG for print script
+    //qInfo() << script.toUtf8().constData(); // <- DEBUG for print script
     file.close();
 
     QTemporaryFile temporaryFile(QDir::tempPath() + "/EveWPreview_XXXXXX.js");
@@ -153,12 +153,11 @@ void KWinManager::SetWindowPosition(const QString &profile, const QPoint newPosi
         return;
     }
 
-
-    qInfo() << "[SetWindowPosition] -> Script used for profile:" << profile;
+    qInfo() << "[SetWindowPosition] -> Script used for character:" << character;
 }
 
 void KWinManager::GetThumbnailsPositions() {
-    qInfo() << "[GetThumbnailsPositions]";
+    qInfo() << "GetThumbnailsPositions()";
 
     QTemporaryFile script(QDir::tempPath() + "/EveWPreview_XXXXXX.js");
     script.setAutoRemove(true);
@@ -218,7 +217,7 @@ void KWinManager::GetThumbnailsPositions() {
     qInfo() << "[GetThumbnailsPositions] -> Script used";
 }
 
-void KWinManager::setFocusedWindow(const QString &windowToFocused)
+void KWinManager::setFocusedClient(const QString &clientToFocused)
 {
     qInfo() << "setFocusedWindow()";
 
@@ -229,13 +228,14 @@ void KWinManager::setFocusedWindow(const QString &windowToFocused)
         return;
     }
 
-    QFile file(":/scripts/KWin_SetFocusedWindow.js");
+    QFile file(":/scripts/KWin_SetFocusedClient.js");
     if (!file.open(QIODevice::ReadOnly)) {
         qCritical() << "[setFocusedWindow] -> Impossible d’ouvrir le script embarqué";
         return;
     }
-    const QString scriptRaw = QString::fromUtf8(file.readAll()).arg(windowToFocused);
-    //qInfo() << script.toUtf8().constData(); // <- DEBUG for print script
+    QString caption = "EVE - " + clientToFocused;
+    const QString scriptRaw = QString::fromUtf8(file.readAll()).arg(caption);
+    qInfo() << scriptRaw; // <- DEBUG for print script
     script.write(scriptRaw.toUtf8());
     script.flush();
     script.close();

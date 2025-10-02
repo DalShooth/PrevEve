@@ -65,10 +65,10 @@ StreamManager::StreamManager()
         this,
         [this] {
             qInfo() << "[onStreamsReady]";
-            QStringList ThumbnailsProfiles = ConfigManager::Instance()->loadThumbnailsProfiles();
+            QStringList characters = ConfigManager::Instance()->loadCharacters();
             // Boucle sur les streams
             for (int i = 0; i < m_PortalStreamInfoList.length(); ++i) {
-                Thumbnail* preview = new Thumbnail(m_MainWindow, m_PipeWireCore, &m_PortalStreamInfoList[i], i, &ThumbnailsProfiles);
+                Thumbnail* preview = new Thumbnail(m_MainWindow, m_PipeWireCore, &m_PortalStreamInfoList[i], i, &characters);
                 m_ThumbnailsList.append(preview); // Ajoute chaque widget au tableau
                 preview->show(); // Affiche chaque widget
             }

@@ -37,8 +37,8 @@ qt_add_executable(
         src/ConfigManager.cpp
         src/ConfigManager.h
         src/Data/ThumbnailPosition.h
-        src/ThumbnailsProfilesListPopUp.cpp
-        src/ThumbnailsProfilesListPopUp.h
+        src/CharactersListPopUp.cpp
+        src/CharactersListPopUp.h
 )
 
 target_include_directories(eve-w-preview PRIVATE ${PIPEWIRE_INCLUDE_DIRS})

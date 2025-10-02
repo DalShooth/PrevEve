@@ -33,8 +33,8 @@ QSize ConfigManager::loadThumbnailsSize() const {
     return QSize(width, height);
 }
 
-QStringList ConfigManager::loadThumbnailsProfiles() {
-    qInfo() << "loadThumbnailsProfilesList()";
+QStringList ConfigManager::loadCharacters() {
+    qInfo() << "loadCharacters()";
 
     QSettings settings(
         QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf",
@@ -42,22 +42,22 @@ QStringList ConfigManager::loadThumbnailsProfiles() {
     );
 
     // Récupère la liste, sinon retourne une QStringList vide
-    QStringList thumbnailsProfiles = settings.value("ThumbnailsProfiles/List").toStringList();
+    QStringList characters = settings.value("Characters/List").toStringList();
 
-    qInfo() << "[loadThumbnailsProfilesList] -> loaded" << thumbnailsProfiles.size() << "ThumbnailsProfiles";
-    return thumbnailsProfiles;
+    qInfo() << "[loadCharacters] -> loaded" << characters.size() << "Characters";
+    return characters;
 }
 
 
-QPoint ConfigManager::loadThumbnailPosition(const QString &profile) const {
-    qInfo() << "loadThumbnailPosition()" << profile;
+QPoint ConfigManager::loadThumbnailPosition(const QString &character) const {
+    qInfo() << "loadThumbnailPosition()" << character;
 
     QSettings settings(QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf",
                        QSettings::IniFormat);
 
     settings.beginGroup("ThumbnailsPositions");
-    int x = settings.value(profile + "/x", 0).toInt();
-    int y = settings.value(profile + "/y", 0).toInt();
+    int x = settings.value(character + "/x", 0).toInt();
+    int y = settings.value(character + "/y", 0).toInt();
     settings.endGroup();
 
     return QPoint(x, y);
@@ -73,7 +73,7 @@ void ConfigManager::saveThumbnailsPositions(const QList<ThumbnailPosition>& thum
     // On écrit les nouvelles
     settings.beginGroup("ThumbnailsPositions");
     for (const ThumbnailPosition& pos : thumbnailsPositions) {
-        QString key = pos.profile;
+        QString key = pos.character;
         settings.setValue(key + "/x", pos.position.x());
         settings.setValue(key + "/y", pos.position.y());
     }
@@ -82,13 +82,13 @@ void ConfigManager::saveThumbnailsPositions(const QList<ThumbnailPosition>& thum
     settings.sync();
 }
 
-void ConfigManager::saveThumbnailsProfiles(const QStringList& ThumbnailsProfiles) const {
-    qInfo() << "[saveThumbnailsProfilesList]";
+void ConfigManager::saveCharacters(const QStringList& saveCharacters) const {
+    qInfo() << "[saveCharacters]";
 
     QSettings settings(QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf", QSettings::IniFormat);
 
     // Écrit la liste sous forme de QStringList (QSettings sait les stocker)
-    settings.setValue("ThumbnailsProfiles/List", ThumbnailsProfiles);
+    settings.setValue("Characters/List", saveCharacters);
 
     settings.sync();
 }

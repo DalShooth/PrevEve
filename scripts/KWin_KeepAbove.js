@@ -9,6 +9,10 @@ function applyKeepAbove() {
         if (w.caption.indexOf("Thumbnail") === 0) {
             if (!w.keepAbove) {
                 w.keepAbove = true;
+                w.skipTaskbar = true;
+                w.skipSwitcher = true;
+                w.specialWindow = true;
+                w.windowType = dock;
                 allOk = false; // au moins une n’était pas encore en keepAbove
             }
         }

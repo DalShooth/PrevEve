@@ -18,7 +18,7 @@ Thumbnail::Thumbnail(QWidget* parent,
     pw_core* PipeWireCore,
     PortalStreamInfo* StreamInfo,
     const int ThumbnailId,
-    QStringList* ThumbnailsProfiles) :
+    QStringList* characters) :
         QWidget(parent),
         m_thumbnailId(ThumbnailId),
         m_PipeWireCore(PipeWireCore),
@@ -45,11 +45,11 @@ Thumbnail::Thumbnail(QWidget* parent,
                 mainWindow->GetUi().HeightLineEdit->text().toInt()
             );
             m_closeBtn->move(width() - m_closeBtn->width() - 5, 5); // Re-positionne le boutton close
-            m_profileSelectComboBox->move(5, height() - m_profileSelectComboBox->height() - 5); // Re-positionne le combobox
+            m_characterSelectComboBox->move(5, height() - m_characterSelectComboBox->height() - 5); // Re-positionne le combobox
     });
     //=
 
-    setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
+    setWindowFlags(Qt::FramelessWindowHint | Qt::SplashScreen);
     qInfo() << "id : " << m_thumbnailId;
     setStyleSheet("background-color: red;");
 
@@ -62,15 +62,15 @@ Thumbnail::Thumbnail(QWidget* parent,
     connect(m_closeBtn, &QToolButton::clicked, this, &QWidget::close);
     //=
 
-    //= ComboBox de séléction de profile
-    m_profileSelectComboBox = new QComboBox(this);
-    m_profileSelectComboBox->setFixedWidth(120);
-    m_profileSelectComboBox->move(5, height() - m_profileSelectComboBox->height() - 5); // bas gauche
-    m_profileSelectComboBox->addItem("");
-    m_profileSelectComboBox->addItems(*ThumbnailsProfiles);
-    m_profileSelectComboBox->setCurrentIndex(-1);
-    connect(m_profileSelectComboBox, &QComboBox::currentTextChanged,
-        this, &Thumbnail::onProfileSelected);
+    //= ComboBox de séléction de personnage
+    m_characterSelectComboBox = new QComboBox(this);
+    m_characterSelectComboBox->setFixedWidth(120);
+    m_characterSelectComboBox->move(5, height() - m_characterSelectComboBox->height() - 5); // bas gauche
+    m_characterSelectComboBox->addItem("");
+    m_characterSelectComboBox->addItems(*characters);
+    m_characterSelectComboBox->setCurrentIndex(-1);
+    connect(m_characterSelectComboBox, &QComboBox::currentTextChanged,
+        this, &Thumbnail::onCharacterSelected);
     //
 
     //= PipeWire
@@ -160,26 +160,26 @@ void Thumbnail::mousePressEvent(QMouseEvent *event) {
         event->accept();
     }
     if (event->buttons() & Qt::LeftButton) {
-        //KWinManager::Instance()->setFocusedWindow();
+        KWinManager::Instance()->setFocusedClient(m_character);
     }
 }
 
-void Thumbnail::onProfileSelected(const QString& selectedProfile) {
-    if (selectedProfile.isEmpty()) {
+void Thumbnail::onCharacterSelected(const QString& selectedCharacter) {
+    if (selectedCharacter.isEmpty()) {
         return;
     }
+    qInfo() << "onCharacterSelected() :" << selectedCharacter;
+    m_character = selectedCharacter;
 
-    qInfo() << "[Thumbnail] Profile selected:" << selectedProfile;
+    setWindowTitle(QString("Thumbnail-%1").arg(m_character)); // Titre de la fenêtre, sert au script SetWindowPosition
 
-    setWindowTitle(QString("Thumbnail-%1").arg(selectedProfile)); // Titre de la fenêtre, sert au script SetWindowPosition
-
-    // Charger la position du profile
-    QTimer::singleShot(100, [selectedProfile] {
-        const QPoint thumbnailPosition = ConfigManager::Instance()->loadThumbnailPosition(selectedProfile);
-        KWinManager::Instance()->SetWindowPosition(selectedProfile, thumbnailPosition);
+    // Charger la position de la thumbnial du personnage
+    QTimer::singleShot(100, [this] {
+        const QPoint thumbnailPosition = ConfigManager::Instance()->loadThumbnailPosition(m_character);
+        KWinManager::Instance()->SetWindowPosition(m_character, thumbnailPosition);
     });
 
-    m_profileSelectComboBox->setVisible(false);
+    m_characterSelectComboBox->setVisible(false);
 }
 
 void Thumbnail::handleStreamStateChanged(

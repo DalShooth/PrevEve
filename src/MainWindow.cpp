@@ -2,7 +2,7 @@
 
 #include <qevent.h>
 #include <qtimer.h>
-#include "ThumbnailsProfilesListPopUp.h"
+#include "CharactersListPopUp.h"
 #include "ConfigManager.h"
 #include "KWinManager.h"
 #include "StreamManager.h"
@@ -104,7 +104,7 @@ MainWindow::MainWindow()
         &QPushButton::clicked,
         this,
         [] {
-            ThumbnailsProfilesListPopUp popup;
+            CharactersListPopUp popup;
             if (popup.exec() == QDialog::Accepted) {
                 QStringList list = popup.values();
                 for (const QString& str : list) {
