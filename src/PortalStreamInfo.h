@@ -1,15 +1,10 @@
 #pragma once
 
-// GROK Update
 #include <qdbusargument.h>
-#include <QMetaType> // Replace qtypes.h with QMetaType
-#include <QVariant>  // For QVariantMap
+#include <QMetaType>
 
-//GROK Update
-//#include <qdbusargument.h>
-//#include <qtypes.h>
 
-/* Structure pour analysé le contenu de QDBusArgument sur les stream (results.value <- onStartResponse)
+/* Structure pour analyser le contenu de QDBusArgument sur les stream (results.value <- onStartResponse)
  *
  *
  */

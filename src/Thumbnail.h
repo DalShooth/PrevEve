@@ -2,9 +2,11 @@
 
 #include <QMouseEvent>
 #include <QToolButton>
-
+#include "KWinManager.h"
 #include "ui_Thumbnail.h"
 #include "StreamManager.h"
+#include "PortalStreamInfo.h"
+#include "MainWindow.h"
 
 class QComboBox;
 class QToolButton;
@@ -15,19 +17,44 @@ class Thumbnail final : public QWidget
 {
     Q_OBJECT
 public:
-    explicit Thumbnail(QWidget* parent,
+    explicit Thumbnail(QWidget *parent,
+        MainWindow* mainWindow,
         pw_core* PipeWireCore,
         PortalStreamInfo* StreamInfo,
-        int ThumbnailId,
-        QStringList* characters); // Constructor
+        const QStringList* characters); // Constructor
 
     signals:
     void onVideoFrameAvailable(const QImage &image);
 
 protected:
-    ~Thumbnail() override;
+    ~Thumbnail() override {
+        pw_stream_disconnect(m_PipeWireStream);
+        pw_stream_destroy(m_PipeWireStream);
+    }
 
-    void mousePressEvent(QMouseEvent* event) override;
+    // Événement de souris
+    void mousePressEvent(QMouseEvent* event) override{
+        if (event->button() == Qt::RightButton) {
+            m_dragPos = event->globalPosition().toPoint() - frameGeometry().topLeft();
+            m_dragging = true;
+            event->accept();
+        }
+        if (event->buttons() & Qt::LeftButton) {
+            KWinManager::Instance()->setFocusedClient(m_character);
+        }
+    }
+    void mouseMoveEvent(QMouseEvent *event) override {
+        if (m_dragging && (event->buttons() & Qt::RightButton)) {
+            move(event->globalPosition().toPoint() - m_dragPos);
+            event->accept();
+        }
+    }
+    void mouseReleaseEvent(QMouseEvent *event) override {
+        if (event->button() == Qt::RightButton) {
+            m_dragging = false;
+            event->accept();
+        }
+    }
 
 private:
     //= Événement PipeWire
@@ -91,10 +118,11 @@ private:
     void setCloseButtonPosition() const { m_closeBtn->move(width() - m_closeBtn->width() - 5, 5); }
 
     Ui_ThumbnailWidget* m_Ui; // Ui Qt (.ui)
+    QPoint m_dragPos;
+    bool m_dragging = false;
     QToolButton* m_closeBtn; // Bouton de fermeture
     QComboBox* m_characterSelectComboBox;
 
-    int m_thumbnailId;
     QString m_character;
     pw_core* m_PipeWireCore; // Core PipeWire
     pw_properties* m_PipeWireProperties; // Propriétés PipeWire

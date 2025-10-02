@@ -1,24 +1,17 @@
 #include "StreamManager.h"
+
 #include <QDBusPendingReply>
 #include <qdbusunixfiledescriptor.h>
 #include <QDebug>
 #include <QSocketNotifier>
 #include <qtimer.h>
-
-#include "PortalStreamInfo.h"
-#include <pipewire/pipewire.h>
-#include <spa/debug/types.h>
-#include <spa/debug/pod.h>
-
 #include "ConfigManager.h"
-#include "KWinManager.h"
-#include "MainWindow.h"
-#include "Thumbnail.h"
 
-
-StreamManager::StreamManager()
+void StreamManager::init(MainWindow* mainWindow)
 {
-    qInfo() << "CONSTRUCTOR [StreamManager]";
+    qInfo() << "StreamManager::init";
+    m_mainWindow = mainWindow;
+    setParent(mainWindow);
 
     // Canal de communication persistant entre l'app Qt et le service org.freedesktop.portal.ScreenCast
     m_QtDBusScreenCastInterface = new QDBusInterface(
@@ -65,22 +58,20 @@ StreamManager::StreamManager()
         this,
         [this] {
             qInfo() << "[onStreamsReady]";
-            QStringList characters = ConfigManager::Instance()->loadCharacters();
+            const QStringList characters = ConfigManager::loadCharacters();
             // Boucle sur les streams
             for (int i = 0; i < m_PortalStreamInfoList.length(); ++i) {
-                Thumbnail* preview = new Thumbnail(m_MainWindow, m_PipeWireCore, &m_PortalStreamInfoList[i], i, &characters);
-                m_ThumbnailsList.append(preview); // Ajoute chaque widget au tableau
-                preview->show(); // Affiche chaque widget
+                Thumbnail* preview = new Thumbnail(
+                    nullptr,
+                    m_mainWindow,
+                    m_PipeWireCore,
+                    &m_PortalStreamInfoList[i],
+                    &characters
+                );
+                m_ThumbnailsList.append(preview);
             }
-            KWinManager::MakeThumbnailsKeepAbove(); // Appel le KWin script "KeepAbove"
         }
     );
-}
-
-StreamManager::~StreamManager()
-{
-    m_QtDBusScreenCastInterface->asyncCall("Close");
-    pw_deinit();
 }
 
 void StreamManager::onChangeScreenCastState() // Linear State Machine
@@ -88,16 +79,16 @@ void StreamManager::onChangeScreenCastState() // Linear State Machine
     switch (m_StreamState) {
         case ScreenCastState::Idle: // Cosmetique
             qInfo() << "[onChangeScreenCastState] -> Idle";
-            m_MainWindow->GetUi().SetupPreviewsButton->setText("Setup\nPreviews");
-            m_MainWindow->GetUi().SetupPreviewsButton->setEnabled(true);
-            m_MainWindow->GetUi().SavePositionsButton->setEnabled(false);
-            m_MainWindow->GetUi().EditCharactersList->setEnabled(true);
+            m_mainWindow->GetUi().SetupPreviewsButton->setText("Setup\nPreviews");
+            m_mainWindow->GetUi().SetupPreviewsButton->setEnabled(true);
+            m_mainWindow->GetUi().SavePositionsButton->setEnabled(false);
+            m_mainWindow->GetUi().EditCharactersList->setEnabled(true);
             break;
         case ScreenCastState::CreatingSession: // Cosmetique
             qInfo() << "[onChangeScreenCastState] -> CreatingSession...";
-            m_MainWindow->GetUi().SetupPreviewsButton->setText("...");
-            m_MainWindow->GetUi().SetupPreviewsButton->setEnabled(false);
-            m_MainWindow->GetUi().EditCharactersList->setEnabled(false);
+            m_mainWindow->GetUi().SetupPreviewsButton->setText("...");
+            m_mainWindow->GetUi().SetupPreviewsButton->setEnabled(false);
+            m_mainWindow->GetUi().EditCharactersList->setEnabled(false);
             break;
         case ScreenCastState::SessionCreated: // Actif
             qInfo() << "[onChangeScreenCastState] -> SessionCreated";
@@ -127,9 +118,9 @@ void StreamManager::onChangeScreenCastState() // Linear State Machine
         case ScreenCastState::Active: // Actif
             qInfo() << "[onChangeScreenCastState] -> Streams is Active";
             emit onStreamsReady(); // Signalé la préparation des streams
-            m_MainWindow->GetUi().SetupPreviewsButton->setEnabled(true);
-            m_MainWindow->GetUi().SetupPreviewsButton->setText("Remove\nPreview");
-            m_MainWindow->GetUi().SavePositionsButton->setEnabled(true);
+            m_mainWindow->GetUi().SetupPreviewsButton->setEnabled(true);
+            m_mainWindow->GetUi().SetupPreviewsButton->setText("Remove\nPreview");
+            m_mainWindow->GetUi().SavePositionsButton->setEnabled(true);
             break;
         default:
             break;
@@ -428,6 +419,8 @@ void StreamManager::onOpenPipeWireConnexionRequestFinished(QDBusPendingCallWatch
 
     setScreenCastState(ScreenCastState::PipeWireRemoteCreated); // Passage à l'état suivant
 }
+
+
 
 void StreamManager::SetupPreviews() {
     qInfo() << "[SetupPreviews]";

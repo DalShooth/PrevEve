@@ -1,10 +1,7 @@
 <!DOCTYPE RCC><RCC version="1.0">
     <qresource>
-        <file>scripts/KWin_KeepAbove.js</file>
-        <file>scripts/KWin_SetWindowPosition.js</file>
         <file>scripts/KWin_GetThumbnailsPositions.js</file>
         <file>scripts/KWin_SetFocusedClient.js</file>
-        <file>scripts/KWin_PingTest.js</file>
         <file>assets/EveWPreview.png</file>
         <file>scripts/eve-w-preview.desktop</file>
     </qresource>

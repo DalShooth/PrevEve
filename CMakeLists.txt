@@ -10,7 +10,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_FIND_DEBUG_MODE FALSE)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 6.4.2 EXACT REQUIRED COMPONENTS Widgets Core DBus)
+find_package(Qt6 6.4.2 EXACT REQUIRED COMPONENTS Widgets Core DBus Gui)
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(GST REQUIRED gstreamer-1.0>=1.20)
@@ -20,7 +20,7 @@ include_directories(${GST_INCLUDE_DIRS})
 link_directories(${GST_LIBRARY_DIRS})
 
 qt_add_executable(
-        eve-w-preview
+        ${PROJECT_NAME}
         src/main.cpp
         src/MainWindow.cpp
         src/MainWindow.h
@@ -41,14 +41,15 @@ qt_add_executable(
         src/CharactersListPopUp.h
 )
 
-target_include_directories(eve-w-preview PRIVATE ${PIPEWIRE_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PRIVATE ${PIPEWIRE_INCLUDE_DIRS})
 
 target_link_libraries(
-        eve-w-preview
+        ${PROJECT_NAME}
         PRIVATE
         Qt6::Widgets
         Qt6::Core
         Qt6::DBus
+        Qt::Gui
         ${GST_LIBRARIES}
         ${PIPEWIRE_LIBRARIES}
 )

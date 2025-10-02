@@ -1,18 +1,13 @@
-/* Create by Wanek, for playing EVE on Linux, fu** you Windows */
+/* Create by Wanek, for multibox EVE on Linux, fu** you Windows */
+
+#include "MainWindow.h"
 
 #include <qdatetime.h>
-#include <qdir.h>
-#include <QFile>
 #include <QStandardPaths>
-#include "MainWindow.h"
-#include <QtDBus/qdbusmetatype.h>
-
 #include "ConfigManager.h"
 #include "KWinManager.h"
-#include "PortalStreamInfo.h"
 #include "StreamManager.h"
 
-// Fichier log global
 QFile logFile;
 
 void myMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
@@ -32,46 +27,35 @@ void myMessageHandler(QtMsgType type, const QMessageLogContext &context, const Q
 
 void installDesktopFile()
 {
+    qInfo() << "installDesktopFile()";
+
     const QString appsDir = QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation);
     const QString desktopDestFile = appsDir + "/eve-w-preview.desktop";
     if (QFile::exists(desktopDestFile)) {
-        qInfo() << "[DesktopFile] Already exists:" << desktopDestFile;
         return;
     }
     QFile src(":/scripts/eve-w-preview.desktop");
     if (!src.exists()) {
-        qWarning() << "[DesktopFile] Resource not found!";
         return;
     }
     if (!src.copy(desktopDestFile)) {
-        qWarning() << "[DesktopFile] Failed to copy to:" << desktopDestFile;
-    } else {
-        qInfo() << "[DesktopFile] Installed to:" << desktopDestFile;
+        qWarning() << "[installDesktopFile] Failed to copy to:" << desktopDestFile;
     }
 }
 
 void installIcon()
 {
-    const QString iconDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)
-                      + "/icons/";
+    qInfo() << "installIcon()";
+
+    const QString iconDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/icons/";
     const QString destFile = iconDir + "EveWPreview.png";
 
     if (QFile::exists(destFile)) {
-        qDebug() << "[Icon] Already exists:" << destFile;
         return;
     }
 
-    // Ton PNG embarqué dans .qrc
-    QFile src(":/assets/EveWPreview.png");
-    if (!src.exists()) {
-        qWarning() << "[Icon] Resource not found!";
-        return;
-    }
-
-    if (!src.copy(destFile)) {
-        qWarning() << "[Icon] Failed to copy to:" << destFile;
-    } else {
-        qDebug() << "[Icon] Installed to:" << destFile;
+    if (QFile src(":/assets/EveWPreview.png"); !src.copy(destFile)) {
+        qWarning() << "[installIcon] Failed to copy to:" << destFile;
     }
 }
 
@@ -85,22 +69,22 @@ int main(int argc, char *argv[])
     logFile.open(QIODevice::WriteOnly | QIODevice::Text);
     qInstallMessageHandler(myMessageHandler);
 
-    QApplication app(argc, argv);
+    // Options de lancement
+    qputenv("QT_QPA_PLATFORM", "xcb");
+    qputenv("QSG_RHI_BACKEND", "opengl");
+    qputenv("QSG_RENDER_LOOP", "basic");
+    qputenv("QT_XCB_NO_XI2", "1");
 
     installIcon(); // Copie l'icone dans .local/share/icons
     installDesktopFile(); // Copie le .desktop dans .local/share/applications
 
-    //= Enregistrement PortalStreamInfo // todo -> voir s'il est possible de s'en débarrassé
-    qDBusRegisterMetaType<PortalStreamInfo>();
-    qDBusRegisterMetaType<QList<PortalStreamInfo>>();
-    //=
+    QApplication app(argc, argv);
 
-    // Init Singleton
+    // Init
     ConfigManager::Instance();
     KWinManager::Instance();
-
-    MainWindow MainWindow; // Crée la fenêtre principale
-    StreamManager::Instance().SetMainWindow(&MainWindow); // Crée StreamManager et Set sa ref à MainWindow (Singleton)
+    MainWindow MainWindow;
+    StreamManager::GetInstance().init(&MainWindow);
     MainWindow.show(); // Affiche MainWindow
 
     return QApplication::exec();

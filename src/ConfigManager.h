@@ -21,7 +21,7 @@ public:
     //=
 
     QSize loadThumbnailsSize() const;
-    QStringList loadCharacters();
+    static QStringList loadCharacters();
     QPoint loadThumbnailPosition(const QString &character) const;
 
     void saveThumnailsSize(int width, int height) const;

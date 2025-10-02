@@ -6,25 +6,26 @@
 #include "ConfigManager.h"
 #include "KWinManager.h"
 #include "StreamManager.h"
+#include "Thumbnail.h"
 
 MainWindow::MainWindow()
 {
-    qInfo() << "CONSTRUCTOR [MainWindow]";
+    qInfo() << "CONSTRUCTOR MainWindow()";
 
     //=== UI
     m_Ui = new Ui_MainWindow();
     m_Ui->setupUi(this); // UI deviens Ui_MainWindow
     setFixedSize(400, 200); // Fixe la taille de la fenetre
 
-    // Charger la taille depuis .conf
-    const QSize loadedThumbnailsSize = ConfigManager::Instance()->loadThumbnailsSize();
-    m_Ui->WidthLineEdit->setText(QString::number(loadedThumbnailsSize.width()));
-    m_Ui->HeightLineEdit->setText(QString::number(loadedThumbnailsSize.height()));
+    const QSize loadedThumbnailsSize = ConfigManager::Instance()->loadThumbnailsSize(); // Charge la taille des previews
+    m_Ui->WidthLineEdit->setText(QString::number(loadedThumbnailsSize.width())); // Applique la taille sur width
+    m_Ui->HeightLineEdit->setText(QString::number(loadedThumbnailsSize.height())); // Applique la taille sur height
 
-    m_SizeValidator = new QIntValidator(180, 720, this); // IntValidator pour les champs 'Size'
+    const QIntValidator* sizeValidator = new QIntValidator(180, 720, this); // IntValidator pour les champs 'Size'
+    m_Ui->WidthLineEdit->setValidator(sizeValidator);
+    m_Ui->HeightLineEdit->setValidator(sizeValidator);
 
     //= Champ Largeur
-    m_Ui->WidthLineEdit->setValidator(m_SizeValidator);
     connect( // Abonnement au changement temp réel, uniquement pour les valeurs trop hautes
         m_Ui->WidthLineEdit,
         &QLineEdit::textChanged,
@@ -46,10 +47,9 @@ MainWindow::MainWindow()
         emit onThumbnailsSizeSettingsChanged(width, height); // Signale le changement de taille
         ConfigManager::Instance()->saveThumnailsSize(width, height); // Sauvegarde
     });
-    //
+    //=
 
     //= Champ Hauteur
-    m_Ui->HeightLineEdit->setValidator(m_SizeValidator);
     connect( // Abonnement au changement temp réel, uniquement pour les valeurs trop hautes
         m_Ui->HeightLineEdit,
         &QLineEdit::textChanged,
@@ -82,10 +82,10 @@ MainWindow::MainWindow()
         this,
         [] {
             qInfo() << "SetupPreviewsButton clicked";
-            if (StreamManager::Instance().getScreenCastState() == ScreenCastState::Idle) {
-                StreamManager::Instance().SetupPreviews();
-            } else if (StreamManager::Instance().getScreenCastState() == ScreenCastState::Active) {
-                StreamManager::Instance().ClosePreviews();
+            if (StreamManager::GetInstance().getScreenCastState() == ScreenCastState::Idle) {
+                StreamManager::GetInstance().SetupPreviews();
+            } else if (StreamManager::GetInstance().getScreenCastState() == ScreenCastState::Active) {
+                StreamManager::GetInstance().ClosePreviews();
             }
         }
     );
@@ -117,18 +117,22 @@ MainWindow::MainWindow()
 
 void MainWindow::onSavePositionButtonClicked()
 {
-    qInfo() << "[onSavePositionButtonClicked]";
+    qInfo() << "onSavePositionButtonClicked()";
 
     m_Ui->SavePositionsButton->setEnabled(false);
 
-    connect( // Se connecter au signal de réponse du DBus
-        KWinManager::Instance(),
-        &KWinManager::onThumbnailsPositionsReceived,
-        this,
-        [](const QList<ThumbnailPosition> &thumbnailsPositions) {
-            ConfigManager::Instance()->saveThumbnailsPositions(thumbnailsPositions);
-    });
-    KWinManager::Instance()->GetThumbnailsPositions(); // Éxécute le Script KWin
+    for (auto* thumbnail: StreamManager::GetInstance().m_ThumbnailsList) {
+        qInfo() << thumbnail->pos();
+    }
+
+    // connect( // Se connecter au signal de réponse du DBus
+    //     KWinManager::Instance(),
+    //     &KWinManager::onThumbnailsPositionsReceived,
+    //     this,
+    //     [](const QList<ThumbnailPosition> &thumbnailsPositions) {
+    //         ConfigManager::Instance()->saveThumbnailsPositions(thumbnailsPositions);
+    // });
+    // KWinManager::GetThumbnailsPositions(); // Éxécute le Script KWin
 
     QTimer::singleShot(3000, [this] {
         m_Ui->SavePositionsButton->setEnabled(true);

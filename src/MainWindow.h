@@ -2,13 +2,14 @@
 
 #include "ui_MainWindow.h"
 
-class QIntValidator;
-
 class MainWindow final : public QMainWindow
 {
     Q_OBJECT
 public:
     explicit MainWindow();
+    ~MainWindow() override {
+        
+    }
 
     Ui_MainWindow GetUi() const { return *m_Ui; }
 
@@ -18,6 +19,5 @@ public:
 private:
     void onSavePositionButtonClicked();
 
-    Ui_MainWindow* m_Ui;   // objet direct
-    QIntValidator* m_SizeValidator;
+    Ui_MainWindow* m_Ui;
 };

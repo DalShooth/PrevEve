@@ -1,68 +1,58 @@
 #include "Thumbnail.h"
 
 #include <qtimer.h>
-#include <QWindow>
 #include <QComboBox>
-#include <QPoint>
 #include <pipewire/keys.h>
 #include <spa/debug/pod.h>
 #include <spa/debug/types.h>
 #include <spa/param/format-utils.h>
 #include <spa/param/video/raw-utils.h>
-
 #include "ConfigManager.h"
 #include "KWinManager.h"
-#include "MainWindow.h"
+#include "PortalStreamInfo.h"
 
 Thumbnail::Thumbnail(QWidget* parent,
+    MainWindow* mainWindow,
     pw_core* PipeWireCore,
     PortalStreamInfo* StreamInfo,
-    const int ThumbnailId,
-    QStringList* characters) :
+    const QStringList* characters) :
         QWidget(parent),
-        m_thumbnailId(ThumbnailId),
         m_PipeWireCore(PipeWireCore),
         m_StreamInfo(StreamInfo)
 {
-    qInfo() << "CONSTRUCTOR [Thumbnail]";
-
-    const MainWindow* mainWindow = qobject_cast<MainWindow*>(parent); // Parent MainWindow
+    qInfo() << "CONSTRUCTOR Thumbnail()";
 
     //= UI
     m_Ui = new Ui_ThumbnailWidget;
     m_Ui->setupUi(this); // UI deviens Ui_ThumbnailWidget
-    //=
 
-    //= Changement de taille: Maintenant + Dynamique
+    setWindowFlag(Qt::WindowDoesNotAcceptFocus,  true);
+    setWindowFlag(Qt::BypassWindowManagerHint,   true);
+
+    // Changement de taille: Maintenant + Dynamique
     resize(mainWindow->GetUi().WidthLineEdit->text().toInt(), mainWindow->GetUi().HeightLineEdit->text().toInt());
     connect(
         mainWindow,
         &MainWindow::onThumbnailsSizeSettingsChanged,
         this,
         [this, mainWindow] {
-            resize( // Redimensionner le widget | Il est aussi possible de le faire avec un script KWin
+            resize( // Redimensionne le widget
                 mainWindow->GetUi().WidthLineEdit->text().toInt(),
                 mainWindow->GetUi().HeightLineEdit->text().toInt()
             );
             m_closeBtn->move(width() - m_closeBtn->width() - 5, 5); // Re-positionne le boutton close
             m_characterSelectComboBox->move(5, height() - m_characterSelectComboBox->height() - 5); // Re-positionne le combobox
     });
-    //=
 
-    setWindowFlags(Qt::FramelessWindowHint | Qt::SplashScreen);
-    qInfo() << "id : " << m_thumbnailId;
-    setStyleSheet("background-color: red;");
-
-    //= Bouton de fermeture
+    // Bouton de fermeture
     m_closeBtn = new QToolButton(this);
     m_closeBtn->setIcon(style()->standardIcon(QStyle::SP_TitleBarCloseButton));
     m_closeBtn->setFixedSize(20, 20);
-    setCloseButtonPosition(); // Positionne le boutton Todo -> peut etre un moyent de l'encrée ?
+    setCloseButtonPosition(); // Positionne le boutton
     m_closeBtn->raise();  // Assure qu'il est au-dessus du QLabel
     connect(m_closeBtn, &QToolButton::clicked, this, &QWidget::close);
-    //=
 
-    //= ComboBox de séléction de personnage
+    // ComboBox de séléction de personnage
     m_characterSelectComboBox = new QComboBox(this);
     m_characterSelectComboBox->setFixedWidth(120);
     m_characterSelectComboBox->move(5, height() - m_characterSelectComboBox->height() - 5); // bas gauche
@@ -71,7 +61,9 @@ Thumbnail::Thumbnail(QWidget* parent,
     m_characterSelectComboBox->setCurrentIndex(-1);
     connect(m_characterSelectComboBox, &QComboBox::currentTextChanged,
         this, &Thumbnail::onCharacterSelected);
-    //
+
+    show();
+    //=
 
     //= PipeWire
     // Dictionnaire de propriétés PipeWire qui décrit le flux comme vidéo de capture
@@ -147,23 +139,6 @@ Thumbnail::Thumbnail(QWidget* parent,
     //=
 }
 
-Thumbnail::~Thumbnail()
-{
-    pw_stream_disconnect(m_PipeWireStream);
-    pw_stream_destroy(m_PipeWireStream);
-}
-
-void Thumbnail::mousePressEvent(QMouseEvent *event) {
-    qInfo() << "mousePressEvent()";
-    if (event->button() == Qt::RightButton) {
-        window()->windowHandle()->startSystemMove();
-        event->accept();
-    }
-    if (event->buttons() & Qt::LeftButton) {
-        KWinManager::Instance()->setFocusedClient(m_character);
-    }
-}
-
 void Thumbnail::onCharacterSelected(const QString& selectedCharacter) {
     if (selectedCharacter.isEmpty()) {
         return;
@@ -174,10 +149,8 @@ void Thumbnail::onCharacterSelected(const QString& selectedCharacter) {
     setWindowTitle(QString("Thumbnail-%1").arg(m_character)); // Titre de la fenêtre, sert au script SetWindowPosition
 
     // Charger la position de la thumbnial du personnage
-    QTimer::singleShot(100, [this] {
-        const QPoint thumbnailPosition = ConfigManager::Instance()->loadThumbnailPosition(m_character);
-        KWinManager::Instance()->SetWindowPosition(m_character, thumbnailPosition);
-    });
+    const QPoint thumbnailPosition = ConfigManager::Instance()->loadThumbnailPosition(m_character);
+    move(thumbnailPosition.x(), thumbnailPosition.y());
 
     m_characterSelectComboBox->setVisible(false);
 }
