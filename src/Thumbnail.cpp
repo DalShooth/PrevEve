@@ -9,18 +9,19 @@
 #include <spa/param/video/raw-utils.h>
 #include "ConfigManager.h"
 #include "KWinManager.h"
-#include "PortalStreamInfo.h"
+#include "EveWPreviewWindow.h"
 
-Thumbnail::Thumbnail(QWidget* parent,
-    MainWindow* mainWindow,
+Thumbnail::Thumbnail(
+    EveWPreviewWindow* eveWPreviewWindow,
     pw_core* PipeWireCore,
     PortalStreamInfo* StreamInfo,
     const QStringList* characters) :
-        QWidget(parent),
         m_PipeWireCore(PipeWireCore),
         m_StreamInfo(StreamInfo)
 {
     qInfo() << "CONSTRUCTOR Thumbnail()";
+
+    setAttribute(Qt::WA_DeleteOnClose);
 
     //= UI
     m_Ui = new Ui_ThumbnailWidget;
@@ -30,15 +31,15 @@ Thumbnail::Thumbnail(QWidget* parent,
     setWindowFlag(Qt::BypassWindowManagerHint,   true);
 
     // Changement de taille: Maintenant + Dynamique
-    resize(mainWindow->GetUi().WidthLineEdit->text().toInt(), mainWindow->GetUi().HeightLineEdit->text().toInt());
+    resize(eveWPreviewWindow->m_Ui->WidthLineEdit->text().toInt(), eveWPreviewWindow->m_Ui->HeightLineEdit->text().toInt());
     connect(
-        mainWindow,
-        &MainWindow::onThumbnailsSizeSettingsChanged,
+        eveWPreviewWindow,
+        &EveWPreviewWindow::onThumbnailsSizeSettingsChanged,
         this,
-        [this, mainWindow] {
+        [this, eveWPreviewWindow] {
             resize( // Redimensionne le widget
-                mainWindow->GetUi().WidthLineEdit->text().toInt(),
-                mainWindow->GetUi().HeightLineEdit->text().toInt()
+                eveWPreviewWindow->m_Ui->WidthLineEdit->text().toInt(),
+                eveWPreviewWindow->m_Ui->HeightLineEdit->text().toInt()
             );
             m_closeBtn->move(width() - m_closeBtn->width() - 5, 5); // Re-positionne le boutton close
             m_characterSelectComboBox->move(5, height() - m_characterSelectComboBox->height() - 5); // Re-positionne le combobox
@@ -149,7 +150,7 @@ void Thumbnail::onCharacterSelected(const QString& selectedCharacter) {
     setWindowTitle(QString("Thumbnail-%1").arg(m_character)); // Titre de la fenêtre, sert au script SetWindowPosition
 
     // Charger la position de la thumbnial du personnage
-    const QPoint thumbnailPosition = ConfigManager::Instance()->loadThumbnailPosition(m_character);
+    const QPoint thumbnailPosition = ConfigManager::loadThumbnailPosition(m_character);
     move(thumbnailPosition.x(), thumbnailPosition.y());
 
     m_characterSelectComboBox->setVisible(false);

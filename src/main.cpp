@@ -1,6 +1,6 @@
 /* Create by Wanek, for multibox EVE on Linux, fu** you Windows */
 
-#include "MainWindow.h"
+#include "EveWPreviewWindow.h"
 
 #include <qdatetime.h>
 #include <QStandardPaths>
@@ -81,11 +81,9 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
 
     // Init
-    ConfigManager::Instance();
     KWinManager::Instance();
-    MainWindow MainWindow;
-    StreamManager::GetInstance().init(&MainWindow);
-    MainWindow.show(); // Affiche MainWindow
+    EveWPreviewWindow* eveWPreviewWindow = new EveWPreviewWindow();
+    eveWPreviewWindow->show(); // Affiche MainWindow
 
     return QApplication::exec();
 }

@@ -22,12 +22,12 @@ link_directories(${GST_LIBRARY_DIRS})
 qt_add_executable(
         ${PROJECT_NAME}
         src/main.cpp
-        src/MainWindow.cpp
-        src/MainWindow.h
-        src/MainWindow.ui
+        src/EveWPreviewWindow.cpp
+        src/EveWPreviewWindow.h
+        src/EveWPreviewWindow.ui
         src/StreamManager.cpp
         src/StreamManager.h
-        src/PortalStreamInfo.h
+        src/Data/PortalStreamInfo.h
         src/Thumbnail.ui
         src/Thumbnail.h
         src/Thumbnail.cpp

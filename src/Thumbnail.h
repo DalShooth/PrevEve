@@ -2,12 +2,14 @@
 
 #include <QMouseEvent>
 #include <QToolButton>
+#include <pipewire/stream.h>
+
+#include "ConfigManager.h"
 #include "KWinManager.h"
 #include "ui_Thumbnail.h"
-#include "StreamManager.h"
-#include "PortalStreamInfo.h"
-#include "MainWindow.h"
+#include "Data/PortalStreamInfo.h"
 
+class EveWPreviewWindow;
 class QComboBox;
 class QToolButton;
 
@@ -17,21 +19,21 @@ class Thumbnail final : public QWidget
 {
     Q_OBJECT
 public:
-    explicit Thumbnail(QWidget *parent,
-        MainWindow* mainWindow,
+    explicit Thumbnail(
+        EveWPreviewWindow* eveWPreviewWindow,
         pw_core* PipeWireCore,
         PortalStreamInfo* StreamInfo,
         const QStringList* characters); // Constructor
+    ~Thumbnail() override {
+        qDebug() << "Thumbnail::~Thumbnail()";
+        pw_stream_disconnect(m_PipeWireStream);
+        pw_stream_destroy(m_PipeWireStream);
+    }
 
     signals:
     void onVideoFrameAvailable(const QImage &image);
 
 protected:
-    ~Thumbnail() override {
-        pw_stream_disconnect(m_PipeWireStream);
-        pw_stream_destroy(m_PipeWireStream);
-    }
-
     // Événement de souris
     void mousePressEvent(QMouseEvent* event) override{
         if (event->button() == Qt::RightButton) {
@@ -40,7 +42,7 @@ protected:
             event->accept();
         }
         if (event->buttons() & Qt::LeftButton) {
-            KWinManager::Instance()->setFocusedClient(m_character);
+            KWinManager::setFocusedClient(m_character);
         }
     }
     void mouseMoveEvent(QMouseEvent *event) override {
@@ -51,7 +53,11 @@ protected:
     }
     void mouseReleaseEvent(QMouseEvent *event) override {
         if (event->button() == Qt::RightButton) {
+            qInfo() << "Thumbnail::mouseReleaseEvent";
             m_dragging = false;
+            if (!m_character.isEmpty()) {
+                ConfigManager::saveThumbnailPosition(pos(), m_character); // Sauvegarde l'empalcement de la thumbnail
+            }
             event->accept();
         }
     }

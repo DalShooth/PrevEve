@@ -10,24 +10,11 @@ class ConfigManager final : public QObject
 {
     Q_OBJECT
 public:
-    //= Singleton
-    static ConfigManager* Instance() {
-        static ConfigManager instance;
-        return &instance;
-    }
-    // Empêche la copie
-    ConfigManager(const ConfigManager&) = delete;
-    ConfigManager& operator=(const ConfigManager&) = delete;
-    //=
-
-    QSize loadThumbnailsSize() const;
+    static QSize loadThumbnailsSize();
     static QStringList loadCharacters();
-    QPoint loadThumbnailPosition(const QString &character) const;
+    static QPoint loadThumbnailPosition(const QString &character);
 
-    void saveThumnailsSize(int width, int height) const;
-    void saveThumbnailsPositions(const QList<ThumbnailPosition>& thumbnailsPositions) const;
-    void saveCharacters(const QStringList &saveCharacters) const;
-
-private:
-    explicit ConfigManager(); // Constructor
+    static auto saveThumnailsSize(int width, int height) -> void;
+    static void saveThumbnailPosition(QPoint thumbnailPosition, const QString &character);
+    static void saveCharacters(const QStringList &saveCharacters);
 };

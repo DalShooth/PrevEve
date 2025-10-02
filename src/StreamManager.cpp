@@ -6,12 +6,11 @@
 #include <QSocketNotifier>
 #include <qtimer.h>
 #include "ConfigManager.h"
+#include "EveWPreviewWindow.h"
 
-void StreamManager::init(MainWindow* mainWindow)
+StreamManager::StreamManager(EveWPreviewWindow* parent) : QObject(parent)
 {
-    qInfo() << "StreamManager::init";
-    m_mainWindow = mainWindow;
-    setParent(mainWindow);
+    qInfo() << "StreamManager::StreamManager()";
 
     // Canal de communication persistant entre l'app Qt et le service org.freedesktop.portal.ScreenCast
     m_QtDBusScreenCastInterface = new QDBusInterface(
@@ -25,15 +24,13 @@ void StreamManager::init(MainWindow* mainWindow)
 
     m_PipeWireLoop = pw_loop_new(nullptr); // Boucle d'événement PipeWire
     if (!m_PipeWireLoop) {
-        qCritical() << "CONSTRUCTOR [StreamManager] -> m_PipeWireLoop invalide";
-        return;
-    }
+        qCritical() << "StreamManager::StreamManager -> m_PipeWireLoop invalid";
+        return;}
 
     m_PipeWireContext = pw_context_new(m_PipeWireLoop, nullptr, 0); // Point d’entrée PipeWire
     if (!m_PipeWireContext) {
-        qCritical() << "CONSTRUCTOR [StreamManager] -> m_PipeWireContext invalide";
-        return;
-    }
+        qCritical() << "StreamManager::StreamManager -> m_PipeWireContext invalid";
+        return;}
 
     // Notifier m_PipeWireLoop sur son FD->Read
     m_PipeWireLoopSocketNotifier = new QSocketNotifier(
@@ -47,28 +44,27 @@ void StreamManager::init(MainWindow* mainWindow)
         this,
         [this] { pw_loop_iterate(m_PipeWireLoop, 0); });
     if (!socketNotifierActivatedConnexion) {
-        qCritical() << "CONSTRUCTOR [StreamManager] -> Failed to connect m_PipeWireLoopSocketNotifier";
-        return;
-    }
+        qCritical() << "StreamManager::StreamManager -> Failed to connect m_PipeWireLoopSocketNotifier";
+        return;}
 
     // Abonnement à la préparation des streams
     connect(
         this,
         &StreamManager::onStreamsReady,
         this,
-        [this] {
-            qInfo() << "[onStreamsReady]";
+        [this, parent] {
+            qInfo() << "StreamManager::onStreamsReady";
             const QStringList characters = ConfigManager::loadCharacters();
+            EveWPreviewWindow* eveWPreviewWindow = qobject_cast<EveWPreviewWindow*>(this->parent());
             // Boucle sur les streams
             for (int i = 0; i < m_PortalStreamInfoList.length(); ++i) {
-                Thumbnail* preview = new Thumbnail(
-                    nullptr,
-                    m_mainWindow,
+                QPointer thumbnail = new Thumbnail(
+                    eveWPreviewWindow,
                     m_PipeWireCore,
                     &m_PortalStreamInfoList[i],
                     &characters
                 );
-                m_ThumbnailsList.append(preview);
+                m_ThumbnailsList.append(thumbnail);
             }
         }
     );
@@ -76,59 +72,60 @@ void StreamManager::init(MainWindow* mainWindow)
 
 void StreamManager::onChangeScreenCastState() // Linear State Machine
 {
-    switch (m_StreamState) {
-        case ScreenCastState::Idle: // Cosmetique
-            qInfo() << "[onChangeScreenCastState] -> Idle";
-            m_mainWindow->GetUi().SetupPreviewsButton->setText("Setup\nPreviews");
-            m_mainWindow->GetUi().SetupPreviewsButton->setEnabled(true);
-            m_mainWindow->GetUi().SavePositionsButton->setEnabled(false);
-            m_mainWindow->GetUi().EditCharactersList->setEnabled(true);
-            break;
-        case ScreenCastState::CreatingSession: // Cosmetique
-            qInfo() << "[onChangeScreenCastState] -> CreatingSession...";
-            m_mainWindow->GetUi().SetupPreviewsButton->setText("...");
-            m_mainWindow->GetUi().SetupPreviewsButton->setEnabled(false);
-            m_mainWindow->GetUi().EditCharactersList->setEnabled(false);
-            break;
-        case ScreenCastState::SessionCreated: // Actif
-            qInfo() << "[onChangeScreenCastState] -> SessionCreated";
-            DBusSelectSourcesRequest();
-            break;
-        case ScreenCastState::SelectingSources: // Cosmetique
-            qInfo() << "[onChangeScreenCastState] -> SelectingSources...";
-            break;
-        case ScreenCastState::SourcesSelected: // Actif
-            qInfo() << "[onChangeScreenCastState] -> SourcesSelected";
-            StartScreensSharingRequest();
-            break;
-        case ScreenCastState::Starting: // Cosmetique
-            qInfo() << "[onChangeScreenCastState] -> Starting...";
-            break;
-        case ScreenCastState::AppSelected: // Actif
-            qInfo() << "[onChangeScreenCastState] -> AppSelected";
-            OpenPipeWireConnexionRequest();
-            break;
-        case ScreenCastState::OpeningPipeWireRemote: // Cosmetique
-            qInfo() << "[onChangeScreenCastState] -> OpeningPipeWireRemote...";
-            break;
-        case ScreenCastState::PipeWireRemoteCreated: // Actif
-            qInfo() << "[onChangeScreenCastState] -> PipeWireRemoteCreated";
-            setScreenCastState(ScreenCastState::Active);
-            break;
-        case ScreenCastState::Active: // Actif
-            qInfo() << "[onChangeScreenCastState] -> Streams is Active";
-            emit onStreamsReady(); // Signalé la préparation des streams
-            m_mainWindow->GetUi().SetupPreviewsButton->setEnabled(true);
-            m_mainWindow->GetUi().SetupPreviewsButton->setText("Remove\nPreview");
-            m_mainWindow->GetUi().SavePositionsButton->setEnabled(true);
-            break;
-        default:
-            break;
+    if (const EveWPreviewWindow* eveWPreviewWindow = qobject_cast<EveWPreviewWindow*>(parent())) {
+        switch (m_StreamState) {
+            case ScreenCastState::Idle: // Cosmetique
+                qInfo() << "[StreamManager::onChangeScreenCastState] -> Idle";
+                eveWPreviewWindow->m_Ui->SetupPreviewsButton->setText("Setup\nPreviews");
+                eveWPreviewWindow->m_Ui->SetupPreviewsButton->setEnabled(true);
+                eveWPreviewWindow->m_Ui->SavePositionsButton->setEnabled(false);
+                eveWPreviewWindow->m_Ui->EditCharactersList->setEnabled(true);
+                break;
+            case ScreenCastState::CreatingSession: // Cosmetique
+                qInfo() << "[StreamManager::onChangeScreenCastState] -> CreatingSession...";
+                eveWPreviewWindow->m_Ui->SetupPreviewsButton->setText("...");
+                eveWPreviewWindow->m_Ui->SetupPreviewsButton->setEnabled(false);
+                eveWPreviewWindow->m_Ui->EditCharactersList->setEnabled(false);
+                break;
+            case ScreenCastState::SessionCreated: // Actif
+                qInfo() << "[StreamManager::onChangeScreenCastState] -> SessionCreated";
+                DBusSelectSourcesRequest();
+                break;
+            case ScreenCastState::SelectingSources: // Cosmetique
+                qInfo() << "[StreamManager::onChangeScreenCastState] -> SelectingSources...";
+                break;
+            case ScreenCastState::SourcesSelected: // Actif
+                qInfo() << "[StreamManager::onChangeScreenCastState] -> SourcesSelected";
+                StartScreensSharingRequest();
+                break;
+            case ScreenCastState::Starting: // Cosmetique
+                qInfo() << "[StreamManager::onChangeScreenCastState] -> Starting...";
+                break;
+            case ScreenCastState::AppSelected: // Actif
+                qInfo() << "[StreamManager::onChangeScreenCastState] -> AppSelected";
+                OpenPipeWireConnexionRequest();
+                break;
+            case ScreenCastState::OpeningPipeWireRemote: // Cosmetique
+                qInfo() << "[StreamManager::onChangeScreenCastState] -> OpeningPipeWireRemote...";
+                break;
+            case ScreenCastState::PipeWireRemoteCreated: // Actif
+                qInfo() << "[StreamManager::onChangeScreenCastState] -> PipeWireRemoteCreated";
+                setScreenCastState(ScreenCastState::Active);
+                break;
+            case ScreenCastState::Active: // Actif
+                qInfo() << "[StreamManager::onChangeScreenCastState] -> Streams is Active";
+                emit onStreamsReady(); // Signalé la préparation des streams
+                eveWPreviewWindow->m_Ui->SetupPreviewsButton->setEnabled(true);
+                eveWPreviewWindow->m_Ui->SetupPreviewsButton->setText("Remove\nPreview");
+                eveWPreviewWindow->m_Ui->SavePositionsButton->setEnabled(true);
+                break;
+            default:
+                break;
+        }
     }
 }
 
-void StreamManager::setScreenCastState(::ScreenCastState NewScreenCastState) {
-    //qInfo() << "[setScreenCastState] " << static_cast<int>(m_StreamState) << " -> " << static_cast<int>(NewScreenCastState);
+void StreamManager::setScreenCastState(const ScreenCastState NewScreenCastState) {
     m_StreamState = NewScreenCastState;
     onChangeScreenCastState();
 }
@@ -420,21 +417,19 @@ void StreamManager::onOpenPipeWireConnexionRequestFinished(QDBusPendingCallWatch
     setScreenCastState(ScreenCastState::PipeWireRemoteCreated); // Passage à l'état suivant
 }
 
-
-
 void StreamManager::SetupPreviews() {
-    qInfo() << "[SetupPreviews]";
+    qInfo() << "StreamManager::SetupPreviews()";
 
     DBusCreateSessionRequest();
 }
 
 void StreamManager::ClosePreviews()
 {
-    qInfo() << "[ClosePreviews]";
+    qInfo() << "StreamManager::ClosePreviews()";
 
-    for (Thumbnail* thumb : m_ThumbnailsList) {
-        if (thumb) {
-            thumb->deleteLater();   // destruction lors du retour à l’event loop
+    for (const QPointer thumbnail : m_ThumbnailsList) {
+        if (thumbnail) {
+            thumbnail->close();
         }
     }
     m_ThumbnailsList.clear();
@@ -449,18 +444,6 @@ void StreamManager::ClosePreviews()
         sessionIface.asyncCall("Close");
         m_DBusSessionHandle = QDBusObjectPath();
     }
-
-    // todo -> peut etre faut-il mieux nétoyer que ca ? dans l'état ca fonctionne
-    // if (m_PipeWireCore) {
-    //     pw_core_disconnect(m_PipeWireCore);
-    //     qInfo() << "[SetupPreviews] -> m_PipeWireCore disconnected";
-    //     m_PipeWireCore = nullptr;
-    // }
-    // if (m_PipeWireFileDescriptor >= 0) {
-    //     close(m_PipeWireFileDescriptor);
-    //     qInfo() << "m_PipeWireFileDescriptor closed";
-    //     m_PipeWireFileDescriptor = -1;
-    // }
 
     setScreenCastState(ScreenCastState::Idle);
 }

@@ -25,24 +25,6 @@ public:
     static void GetThumbnailsPositions();
     static void setFocusedClient(const QString &clientToFocused);
 
-static bool callKWin(const char* method, const QList<QVariant>& args)
-{
-    QDBusMessage msg = QDBusMessage::createMethodCall(
-        "org.kde.KWin", "/KWin", "org.kde.KWin", method);
-    msg.setArguments(args);
-
-    QDBusMessage reply = QDBusConnection::sessionBus().call(msg, QDBus::Block, 3000);
-    if (reply.type() == QDBusMessage::ErrorMessage) {
-        qCritical() << "[DBus] KWin" << method << "args=" << args
-                    << "error=" << reply.errorName() << reply.errorMessage();
-        return false;
-    }
-
-    qInfo() << "[DBus] KWin" << method << "OK";
-    return true;
-}
-
-
 public slots:
     // Fonction réponse à la requête GetThumbnailsPositions du script KWin
     void GetThumbnailsPositionsResponse(const QVariantList& positions) {

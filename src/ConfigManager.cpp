@@ -4,13 +4,8 @@
 #include <qpoint.h>
 #include <QSettings>
 
-ConfigManager::ConfigManager()
-{
-    qInfo() << "CONSTRUCTOR [ConfigManager]";
-}
-
-void ConfigManager::saveThumnailsSize(const int width, const int height) const {
-    qInfo() << "[saveThumnailsSize]";
+void ConfigManager::saveThumnailsSize(const int width, const int height) {
+    qInfo() << "ConfigManager::saveThumnailsSize()";
 
     QSettings settings(QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf", QSettings::IniFormat);
     settings.setValue("ThumbnailWidth", width);
@@ -19,8 +14,8 @@ void ConfigManager::saveThumnailsSize(const int width, const int height) const {
     settings.sync();
 }
 
-QSize ConfigManager::loadThumbnailsSize() const {
-    qInfo() << "loadThumbnailsSize()";
+QSize ConfigManager::loadThumbnailsSize() {
+    qInfo() << "ConfigManager::loadThumbnailsSize()";
 
     const QSettings settings(QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf",
         QSettings::IniFormat);
@@ -28,13 +23,11 @@ QSize ConfigManager::loadThumbnailsSize() const {
     const int width  = settings.value("ThumbnailWidth", 320).toInt();
     const int height = settings.value("ThumbnailHeight", 180).toInt();
 
-    qInfo() << "Thumbnails Size loaded -> w:" << width << "h:" << height;
-
     return QSize(width, height);
 }
 
 QStringList ConfigManager::loadCharacters() {
-    qInfo() << "loadCharacters()";
+    qInfo() << "ConfigManager::loadCharacters()";
 
     QSettings settings(
         QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf",
@@ -44,13 +37,12 @@ QStringList ConfigManager::loadCharacters() {
     // Récupère la liste, sinon retourne une QStringList vide
     QStringList characters = settings.value("Characters/List").toStringList();
 
-    qInfo() << "[loadCharacters] -> loaded" << characters.size() << "Characters";
     return characters;
 }
 
 
-QPoint ConfigManager::loadThumbnailPosition(const QString &character) const {
-    qInfo() << "loadThumbnailPosition()" << character;
+QPoint ConfigManager::loadThumbnailPosition(const QString &character) {
+    qInfo() << "ConfigManager::loadThumbnailPosition()" << character;
 
     QSettings settings(QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf",
                        QSettings::IniFormat);
@@ -63,27 +55,23 @@ QPoint ConfigManager::loadThumbnailPosition(const QString &character) const {
     return QPoint(x, y);
 }
 
+void ConfigManager::saveThumbnailPosition(const QPoint thumbnailPosition, const QString &character)
+{
+    QSettings settings(
+        QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf",
+        QSettings::IniFormat
+    );
 
-
-void ConfigManager::saveThumbnailsPositions(const QList<ThumbnailPosition>& thumbnailsPositions) const {
-    qInfo() << "saveThumbnailsPositions()";
-
-    QSettings settings(QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf", QSettings::IniFormat);
-
-    // On écrit les nouvelles
     settings.beginGroup("ThumbnailsPositions");
-    for (const ThumbnailPosition& pos : thumbnailsPositions) {
-        QString key = pos.character;
-        settings.setValue(key + "/x", pos.position.x());
-        settings.setValue(key + "/y", pos.position.y());
-    }
+    settings.setValue(character + "\\x", thumbnailPosition.x());
+    settings.setValue(character + "\\y", thumbnailPosition.y());
     settings.endGroup();
 
     settings.sync();
 }
 
-void ConfigManager::saveCharacters(const QStringList& saveCharacters) const {
-    qInfo() << "[saveCharacters]";
+void ConfigManager::saveCharacters(const QStringList& saveCharacters) {
+    qInfo() << "ConfigManager::saveCharacters()";
 
     QSettings settings(QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf", QSettings::IniFormat);
 

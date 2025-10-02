@@ -7,7 +7,7 @@
 
 KWinManager::KWinManager(QObject *parent) : QObject(parent)
 {
-    qInfo() << "CONSTRUCTOR [KWinManager]";
+    qInfo() << "KWinManager::KWinManager()";
 
     QDBusConnection::sessionBus().registerService("org.example.EveWPreview");
     QDBusConnection::sessionBus().registerObject("/EveWPreview", this,
