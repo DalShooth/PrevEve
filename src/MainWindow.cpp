@@ -2,7 +2,7 @@
 
 #include <qevent.h>
 #include <qtimer.h>
-#include <QValidator>
+#include "ThumbnailsProfilesListPopUp.h"
 #include "ConfigManager.h"
 #include "KWinManager.h"
 #include "StreamManager.h"
@@ -71,7 +71,8 @@ MainWindow::MainWindow()
             const int height = m_Ui->HeightLineEdit->text().toInt(); // Hauteur
             emit onThumbnailsSizeSettingsChanged(width, height); // Signale le changement de taille
             ConfigManager::Instance()->saveThumnailsSize(width, height); // Sauvegarde
-        });
+        }
+    );
     //=
 
     // Connecte le bouton de création des previews
@@ -86,7 +87,8 @@ MainWindow::MainWindow()
             } else if (StreamManager::Instance().getScreenCastState() == ScreenCastState::Active) {
                 StreamManager::Instance().ClosePreviews();
             }
-    });
+        }
+    );
 
     // Connecte de bouton de sauvegarde des positions des thumbnails
     connect(
@@ -94,6 +96,22 @@ MainWindow::MainWindow()
         &QPushButton::clicked,
         this,
         &MainWindow::onSavePositionButtonClicked
+    );
+
+    // Connecte le boutton d'édition des characters
+    connect(
+        m_Ui->EditCharactersList,
+        &QPushButton::clicked,
+        this,
+        [] {
+            ThumbnailsProfilesListPopUp popup;
+            if (popup.exec() == QDialog::Accepted) {
+                QStringList list = popup.values();
+                for (const QString& str : list) {
+                    qDebug() << "->" << str;
+                }
+            }
+        }
     );
 }
 
@@ -103,16 +121,16 @@ void MainWindow::onSavePositionButtonClicked()
 
     m_Ui->SavePositionsButton->setEnabled(false);
 
-    connect(
+    connect( // Se connecter au signal de réponse du DBus
         KWinManager::Instance(),
-        &KWinManager::onThumbnailPositionsReceived,
+        &KWinManager::onThumbnailsPositionsReceived,
         this,
-        [this](const QString &caption, int x, int y) {
-            ConfigManager::Instance()->saveThumbnailsPositions(caption, x, y);
+        [](const QList<ThumbnailPosition> &thumbnailsPositions) {
+            ConfigManager::Instance()->saveThumbnailsPositions(thumbnailsPositions);
     });
-    KWinManager::Instance()->GetThumbnailsPositions();
+    KWinManager::Instance()->GetThumbnailsPositions(); // Éxécute le Script KWin
 
-    QTimer::singleShot(3000, [this]() {
+    QTimer::singleShot(3000, [this] {
         m_Ui->SavePositionsButton->setEnabled(true);
     });
 }

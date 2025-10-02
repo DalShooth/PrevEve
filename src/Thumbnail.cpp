@@ -2,7 +2,8 @@
 
 #include <qtimer.h>
 #include <QWindow>
-#include <QStyle>
+#include <QComboBox>
+#include <QPoint>
 #include <pipewire/keys.h>
 #include <spa/debug/pod.h>
 #include <spa/debug/types.h>
@@ -13,11 +14,15 @@
 #include "KWinManager.h"
 #include "MainWindow.h"
 
-Thumbnail::Thumbnail(QWidget* parent, pw_core* PipeWireCore, PortalStreamInfo* StreamInfo, const int ThumbnailId) :
-    QWidget(parent),
-    m_thumbnailId(ThumbnailId),
-    m_PipeWireCore(PipeWireCore),
-    m_StreamInfo(StreamInfo)
+Thumbnail::Thumbnail(QWidget* parent,
+    pw_core* PipeWireCore,
+    PortalStreamInfo* StreamInfo,
+    const int ThumbnailId,
+    QStringList* ThumbnailsProfiles) :
+        QWidget(parent),
+        m_thumbnailId(ThumbnailId),
+        m_PipeWireCore(PipeWireCore),
+        m_StreamInfo(StreamInfo)
 {
     qInfo() << "CONSTRUCTOR [Thumbnail]";
 
@@ -40,12 +45,12 @@ Thumbnail::Thumbnail(QWidget* parent, pw_core* PipeWireCore, PortalStreamInfo* S
                 mainWindow->GetUi().HeightLineEdit->text().toInt()
             );
             m_closeBtn->move(width() - m_closeBtn->width() - 5, 5); // Re-positionne le boutton close
+            m_profileSelectComboBox->move(5, height() - m_profileSelectComboBox->height() - 5); // Re-positionne le combobox
     });
     //=
 
     setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
     qInfo() << "id : " << m_thumbnailId;
-    setWindowTitle(QString("Thumbnail-%1").arg(ThumbnailId)); // todo -> mettre le nom de l'app à la place
     setStyleSheet("background-color: red;");
 
     //= Bouton de fermeture
@@ -56,6 +61,17 @@ Thumbnail::Thumbnail(QWidget* parent, pw_core* PipeWireCore, PortalStreamInfo* S
     m_closeBtn->raise();  // Assure qu'il est au-dessus du QLabel
     connect(m_closeBtn, &QToolButton::clicked, this, &QWidget::close);
     //=
+
+    //= ComboBox de séléction de profile
+    m_profileSelectComboBox = new QComboBox(this);
+    m_profileSelectComboBox->setFixedWidth(120);
+    m_profileSelectComboBox->move(5, height() - m_profileSelectComboBox->height() - 5); // bas gauche
+    m_profileSelectComboBox->addItem("");
+    m_profileSelectComboBox->addItems(*ThumbnailsProfiles);
+    m_profileSelectComboBox->setCurrentIndex(-1);
+    connect(m_profileSelectComboBox, &QComboBox::currentTextChanged,
+        this, &Thumbnail::onProfileSelected);
+    //
 
     //= PipeWire
     // Dictionnaire de propriétés PipeWire qui décrit le flux comme vidéo de capture
@@ -138,27 +154,32 @@ Thumbnail::~Thumbnail()
 }
 
 void Thumbnail::mousePressEvent(QMouseEvent *event) {
-    //qInfo() << "[mousePressEvent]";
+    qInfo() << "mousePressEvent()";
     if (event->button() == Qt::RightButton) {
         window()->windowHandle()->startSystemMove();
         event->accept();
     }
     if (event->buttons() & Qt::LeftButton) {
-        // todo -> switch
+        //KWinManager::Instance()->setFocusedWindow();
     }
 }
 
-void Thumbnail::showEvent(QShowEvent* event) {
-    QWidget::showEvent(event);
+void Thumbnail::onProfileSelected(const QString& selectedProfile) {
+    if (selectedProfile.isEmpty()) {
+        return;
+    }
 
-    qInfo() << "[showEvent]";
+    qInfo() << "[Thumbnail] Profile selected:" << selectedProfile;
 
-    QTimer::singleShot(100, this, [this] { // Script 'SetWindowPosition'
-        QPoint thumbnailSavedPosition = ConfigManager::Instance()->loadThumbnailPosition(windowTitle());
-        if (thumbnailSavedPosition.x() >= 0 && thumbnailSavedPosition.y() >= 0) {
-            KWinManager::SetWindowPosition(windowTitle(), thumbnailSavedPosition.x(), thumbnailSavedPosition.y());
-        }
+    setWindowTitle(QString("Thumbnail-%1").arg(selectedProfile)); // Titre de la fenêtre, sert au script SetWindowPosition
+
+    // Charger la position du profile
+    QTimer::singleShot(100, [selectedProfile] {
+        const QPoint thumbnailPosition = ConfigManager::Instance()->loadThumbnailPosition(selectedProfile);
+        KWinManager::Instance()->SetWindowPosition(selectedProfile, thumbnailPosition);
     });
+
+    m_profileSelectComboBox->setVisible(false);
 }
 
 void Thumbnail::handleStreamStateChanged(

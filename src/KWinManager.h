@@ -1,7 +1,9 @@
 #pragma once
+
+#include <qdbusargument.h>
 #include <QDBusInterface>
 #include <QTemporaryFile>
-
+#include "Data/ThumbnailPosition.h"
 
 class KWinManager final : public QObject
 {
@@ -21,20 +23,34 @@ public:
     //=
 
     static void MakeThumbnailsKeepAbove();
-    static void SetWindowPosition(const QString &Caption, int X, int Y);
-    static void GetThumbnailsPositions() ;
+    static void SetWindowPosition(const QString &profile, QPoint newPosition);
+    static void GetThumbnailsPositions();
+    static void setFocusedWindow(const QString &windowToFocused);
 
 public slots:
-    void GetThumbnailsPositionsResponse(const QString &caption, const int x, const int y) {
-        qInfo() << "[GetThumbnailsPositionsResponse] Caption:" << caption << "X:" << x
-            << "Y:" << y;
-        emit onThumbnailPositionsReceived(caption, x, y);}
+    // Fonction réponse à la requête GetThumbnailsPositions du script KWin
+    void GetThumbnailsPositionsResponse(const QVariantList& positions) {
+    qInfo() << "[GetThumbnailsPositionsResponse]" << positions;
+
+    if (positions.size() >= 3) {
+        QList<ThumbnailPosition> thumbnailsPositions;
+        QString raw = positions[0].toString();
+        QString profile = raw.split("Thumbnail-").last();
+
+        int x = positions[1].toInt();
+        int y = positions[2].toInt();
+
+        qInfo() << "Profile:" << profile << "X:" << x << "Y:" << y;
+
+        thumbnailsPositions.append({ profile, QPoint(x, y) });
+
+        emit onThumbnailsPositionsReceived(thumbnailsPositions); // Emet le signal de récéption
+    } else {
+        qWarning() << "[GetThumbnailsPositionsResponse] entry invalide:" << positions;
+    }
+}
 
 Q_SIGNALS:
-    void onThumbnailPositionsReceived(const QString &caption, int x, int y);
-
-private:
-    //void StopTrackingAllThumbnails();
-    /* todo -> pas encore testé, pas besoin pour l'instant grace à
-     * todo -> script.setAutoRemove(true), valacary il est moch */
+    // Signal de récéption des positions de thumbnails/profile
+    void onThumbnailsPositionsReceived(QList<ThumbnailPosition> thumbnailsPositions);
 };

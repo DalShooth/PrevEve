@@ -1,4 +1,3 @@
-// KWin_SetPosition.js
 const TARGET = "%1";        // remplacé par Caption
 const newX   = %2;          // remplacé par X
 const newY   = %3;          // remplacé par Y

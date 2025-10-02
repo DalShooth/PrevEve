@@ -2,7 +2,9 @@
 
 #include <QMap>
 #include <QObject>
+#include <qpoint.h>
 #include <QSizeF>
+#include "Data/ThumbnailPosition.h"
 
 class ConfigManager final : public QObject
 {
@@ -13,16 +15,18 @@ public:
         static ConfigManager instance;
         return &instance;
     }
-    //=
-    //= Singleton - Empêche la copie
+    // Empêche la copie
     ConfigManager(const ConfigManager&) = delete;
     ConfigManager& operator=(const ConfigManager&) = delete;
     //=
 
-    void saveThumnailsSize(int width, int height) const;
     QSize loadThumbnailsSize() const;
-    QPoint loadThumbnailPosition(const QString &caption) const;
-    void saveThumbnailsPositions(const QString &caption, int x, int y) const;
+    QStringList loadThumbnailsProfiles();
+    QPoint loadThumbnailPosition(const QString &profile) const;
+
+    void saveThumnailsSize(int width, int height) const;
+    void saveThumbnailsPositions(const QList<ThumbnailPosition>& thumbnailsPositions) const;
+    void saveThumbnailsProfiles(const QStringList &ThumbnailsProfiles) const;
 
 private:
     explicit ConfigManager(); // Constructor

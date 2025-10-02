@@ -6,7 +6,7 @@ function applyKeepAbove() {
         var w = wins[i];
         if (!w || !w.caption) continue;
 
-        if (w.caption.indexOf("Thumbnail-") === 0) {
+        if (w.caption.indexOf("Thumbnail") === 0) {
             if (!w.keepAbove) {
                 w.keepAbove = true;
                 allOk = false; // au moins une n’était pas encore en keepAbove

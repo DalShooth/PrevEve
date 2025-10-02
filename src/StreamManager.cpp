@@ -10,6 +10,7 @@
 #include <spa/debug/types.h>
 #include <spa/debug/pod.h>
 
+#include "ConfigManager.h"
 #include "KWinManager.h"
 #include "MainWindow.h"
 #include "Thumbnail.h"
@@ -64,15 +65,14 @@ StreamManager::StreamManager()
         this,
         [this] {
             qInfo() << "[onStreamsReady]";
+            QStringList ThumbnailsProfiles = ConfigManager::Instance()->loadThumbnailsProfiles();
             // Boucle sur les streams
             for (int i = 0; i < m_PortalStreamInfoList.length(); ++i) {
-                Thumbnail* preview = new Thumbnail(m_MainWindow, m_PipeWireCore, &m_PortalStreamInfoList[i], i);
-                m_ThumbnailsList.append(preview);
-                /* todo -> trouver un moyent d'avoir le titre de la fenetre
-                 * temporairement c'est l'id de stream qui est utiliser */
-                preview->show();
+                Thumbnail* preview = new Thumbnail(m_MainWindow, m_PipeWireCore, &m_PortalStreamInfoList[i], i, &ThumbnailsProfiles);
+                m_ThumbnailsList.append(preview); // Ajoute chaque widget au tableau
+                preview->show(); // Affiche chaque widget
             }
-            KWinManager::MakeThumbnailsKeepAbove();
+            KWinManager::MakeThumbnailsKeepAbove(); // Appel le KWin script "KeepAbove"
         }
     );
 }
@@ -91,11 +91,13 @@ void StreamManager::onChangeScreenCastState() // Linear State Machine
             m_MainWindow->GetUi().SetupPreviewsButton->setText("Setup\nPreviews");
             m_MainWindow->GetUi().SetupPreviewsButton->setEnabled(true);
             m_MainWindow->GetUi().SavePositionsButton->setEnabled(false);
+            m_MainWindow->GetUi().EditCharactersList->setEnabled(true);
             break;
         case ScreenCastState::CreatingSession: // Cosmetique
             qInfo() << "[onChangeScreenCastState] -> CreatingSession...";
             m_MainWindow->GetUi().SetupPreviewsButton->setText("...");
             m_MainWindow->GetUi().SetupPreviewsButton->setEnabled(false);
+            m_MainWindow->GetUi().EditCharactersList->setEnabled(false);
             break;
         case ScreenCastState::SessionCreated: // Actif
             qInfo() << "[onChangeScreenCastState] -> SessionCreated";

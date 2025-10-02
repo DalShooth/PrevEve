@@ -4,8 +4,6 @@
 #include <qpoint.h>
 #include <QSettings>
 
-#include "KWinManager.h"
-
 ConfigManager::ConfigManager()
 {
     qInfo() << "CONSTRUCTOR [ConfigManager]";
@@ -35,34 +33,64 @@ QSize ConfigManager::loadThumbnailsSize() const {
     return QSize(width, height);
 }
 
-QPoint ConfigManager::loadThumbnailPosition(const QString &caption) const {
-    qInfo() << "loadThumbnailPosition()";
+QStringList ConfigManager::loadThumbnailsProfiles() {
+    qInfo() << "loadThumbnailsProfilesList()";
 
-    QSettings settings(QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf",
-                       QSettings::IniFormat);
+    QSettings settings(
+        QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf",
+        QSettings::IniFormat
+    );
 
-    settings.beginGroup("ThumbnailsPositions");
-    QPoint pos = settings.value(caption, QPoint(0, 0)).toPoint();
-    settings.endGroup();
+    // Récupère la liste, sinon retourne une QStringList vide
+    QStringList thumbnailsProfiles = settings.value("ThumbnailsProfiles/List").toStringList();
 
-    qInfo() << "Thumbnails Position loaded -> " << pos;
-
-    return pos;
+    qInfo() << "[loadThumbnailsProfilesList] -> loaded" << thumbnailsProfiles.size() << "ThumbnailsProfiles";
+    return thumbnailsProfiles;
 }
 
 
-void ConfigManager::saveThumbnailsPositions(const QString &caption, const int x, const int y) const {
-    qInfo() << "[saveThumbnailsPositions]";
+QPoint ConfigManager::loadThumbnailPosition(const QString &profile) const {
+    qInfo() << "loadThumbnailPosition()" << profile;
 
     QSettings settings(QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf",
                        QSettings::IniFormat);
 
     settings.beginGroup("ThumbnailsPositions");
-
-    // Sauvegarde QPoint directement
-    settings.setValue(caption, QPoint(x, y));
-
+    int x = settings.value(profile + "/x", 0).toInt();
+    int y = settings.value(profile + "/y", 0).toInt();
     settings.endGroup();
+
+    return QPoint(x, y);
+}
+
+
+
+void ConfigManager::saveThumbnailsPositions(const QList<ThumbnailPosition>& thumbnailsPositions) const {
+    qInfo() << "saveThumbnailsPositions()";
+
+    QSettings settings(QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf", QSettings::IniFormat);
+
+    // On écrit les nouvelles
+    settings.beginGroup("ThumbnailsPositions");
+    for (const ThumbnailPosition& pos : thumbnailsPositions) {
+        QString key = pos.profile;
+        settings.setValue(key + "/x", pos.position.x());
+        settings.setValue(key + "/y", pos.position.y());
+    }
+    settings.endGroup();
+
     settings.sync();
 }
+
+void ConfigManager::saveThumbnailsProfiles(const QStringList& ThumbnailsProfiles) const {
+    qInfo() << "[saveThumbnailsProfilesList]";
+
+    QSettings settings(QDir::homePath() + "/.config/eve-w-preview/eve-w-preview.conf", QSettings::IniFormat);
+
+    // Écrit la liste sous forme de QStringList (QSettings sait les stocker)
+    settings.setValue("ThumbnailsProfiles/List", ThumbnailsProfiles);
+
+    settings.sync();
+}
+
 

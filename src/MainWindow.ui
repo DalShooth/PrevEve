@@ -86,57 +86,9 @@ Previews</string>
         </item>
        </layout>
       </item>
-      <item row="1" column="0">
-       <widget class="QWidget" name="widget" native="true">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <widget class="QLabel" name="label_3">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>50</y>
-           <width>66</width>
-           <height>36</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Created by 
-Wanek</string>
-         </property>
-        </widget>
-       </widget>
-      </item>
-      <item row="0" column="1" rowspan="2">
+      <item row="0" column="1">
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="0" column="1">
-         <widget class="QLineEdit" name="WidthLineEdit">
-          <property name="focusPolicy">
-           <enum>Qt::ClickFocus</enum>
-          </property>
-          <property name="toolTip">
-           <string>&lt;= 720
-&gt;=180</string>
-          </property>
-          <property name="text">
-           <string>426</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0" colspan="5">
-         <widget class="QCheckBox" name="checkBox">
-          <property name="focusPolicy">
-           <enum>Qt::NoFocus</enum>
-          </property>
-          <property name="text">
-           <string>CheckBox (Unused)</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
+        <item row="1" column="2">
          <widget class="QLabel" name="HeightLabel">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -155,7 +107,31 @@ Wanek</string>
           </property>
          </widget>
         </item>
-        <item row="0" column="0">
+        <item row="3" column="0" colspan="5">
+         <widget class="QCheckBox" name="checkBox">
+          <property name="focusPolicy">
+           <enum>Qt::NoFocus</enum>
+          </property>
+          <property name="text">
+           <string>CheckBox (Unused)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="WidthLineEdit">
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
+          </property>
+          <property name="toolTip">
+           <string>&lt;= 720
+&gt;=180</string>
+          </property>
+          <property name="text">
+           <string>426</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
          <widget class="QLabel" name="WidthLabel">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -174,17 +150,7 @@ Wanek</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="0" colspan="5">
-         <widget class="QCheckBox" name="checkBox_2">
-          <property name="focusPolicy">
-           <enum>Qt::NoFocus</enum>
-          </property>
-          <property name="text">
-           <string>CheckBox (Unused)</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="3">
+        <item row="1" column="3">
          <widget class="QLineEdit" name="HeightLineEdit">
           <property name="focusPolicy">
            <enum>Qt::ClickFocus</enum>
@@ -198,7 +164,37 @@ Wanek</string>
           </property>
          </widget>
         </item>
+        <item row="0" column="0" colspan="4">
+         <widget class="QPushButton" name="EditCharactersList">
+          <property name="text">
+           <string>Edit Characters List</string>
+          </property>
+         </widget>
+        </item>
        </layout>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="QWidget" name="widget" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <widget class="QLabel" name="label_3">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>30</y>
+           <width>161</width>
+           <height>36</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Created by Wanek</string>
+         </property>
+        </widget>
+       </widget>
       </item>
      </layout>
     </item>
