@@ -22,9 +22,6 @@ link_directories(${GST_LIBRARY_DIRS})
 qt_add_executable(
         ${PROJECT_NAME}
         src/main.cpp
-        src/EveWPreviewWindow.cpp
-        src/EveWPreviewWindow.h
-        src/EveWPreviewWindow.ui
         src/StreamManager.cpp
         src/StreamManager.h
         src/Data/PortalStreamInfo.h
@@ -37,8 +34,6 @@ qt_add_executable(
         src/ConfigManager.cpp
         src/ConfigManager.h
         src/Data/ThumbnailPosition.h
-        src/CharactersListPopUp.cpp
-        src/CharactersListPopUp.h
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${PIPEWIRE_INCLUDE_DIRS})
