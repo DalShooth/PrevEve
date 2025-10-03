@@ -1,4 +1,4 @@
-name: Build and Commit PrevEve
+name: Build and Commit eve-w-preview
 
 on:
   workflow_dispatch: # Manual trigger only
@@ -64,17 +64,17 @@ jobs:
     - name: Upload Executable Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: PrevEve-executable
-        path: PrevEve
+        name: eve-w-preview-executable
+        path: eve-w-preview
         retention-days: 5
 
     # Commit and push the executable to the repository
-    - name: Commit PrevEve to repository
+    - name: Commit eve-w-preview to repository
       run: |
         git config --global user.name "GitHub Actions Bot"
         git config --global user.email "actions@github.com"
-        git add PrevEve
-        git commit -m "Add compiled PrevEve executable" || echo "No changes to commit"
+        git add eve-w-preview
+        git commit -m "Add compiled eve-w-preview executable" || echo "No changes to commit"
         git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
