@@ -55,10 +55,10 @@ jobs:
     # Verify and copy the executable to the repository root
     - name: Copy executable to root
       run: |
-        ls -l build/bin/PrevEve || { echo "Error: PrevEve not found"; exit 1; }
-        chmod +x build/bin/PrevEve
-        cp build/bin/PrevEve ../PrevEve
-        ls -l ../PrevEve
+        ls -l build/bin/eve-w-preview || { echo "Error: eve-w-preview not found"; exit 1; }
+        chmod +x build/bin/eve-w-preview
+        cp build/bin/eve-w-preview ../eve-w-preview
+        ls -l ../eve-w-preview
 
     # Upload executable as an artifact (optional, for debugging)
     - name: Upload Executable Artifact
